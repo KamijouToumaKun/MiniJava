@@ -280,11 +280,11 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         }
         String parent = nClass.getParentClass();
 
-        //System.out.println(exp.getName() + type);
-        if(type.equals("int") || type.equals("int[]") || type.equals("boolean")) {
+        // System.out.println(exp.getName() + type);
+        /*if(type.equals("int") || type.equals("int[]") || type.equals("boolean")) {
             PrintError.instance.printError(exp.getLine(),exp.getColumn()," try to give a non-base type value to a base-type var");
             return false;
-        }
+        }*/
         //check if type is the parent class of the expression
         boolean findParentClass = false;
         HashSet<String> parentSet = new HashSet<>();
@@ -519,18 +519,21 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         MType arrVar = (MType)n.f0.accept(this, argu);
         varCheck(arrVar.getName(),argu,arrVar.getLine(),arrVar.getColumn());
         arrVar.setName(changeIdentifier(arrVar, argu));
-        checkExpType(arrVar, "int[]", "type-mismatch for int[]" + arrVar.getLine() + arrVar.getColumn());
+        checkExpType(arrVar, "int[]", "type-mismatch for int[]; " + 
+            "line: " + arrVar.getLine() + "; colomn: " + arrVar.getColumn());
 
         n.f1.accept(this, argu);
 
         MType indexExp = (MType)n.f2.accept(this, argu);
-        checkExpType(indexExp, "int", "type mis-match for index of an array,should be int" + indexExp.getLine() + indexExp.getColumn());
+        checkExpType(indexExp, "int", "type-mismatch for index of an array, should be int; " + 
+            "line: " + indexExp.getLine() + "; colomn: " + indexExp.getColumn());
 
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
 
         MType exp = (MType)n.f5.accept(this, argu);
-        checkExpType(exp, "int", "type mis-match for int[]" + exp.getLine() + exp.getColumn());
+        checkExpType(exp, "int", "type-mismatch for int[]; " + 
+            "line: " + exp.getLine() + "; colomn: " + exp.getColumn());
 
         n.f6.accept(this, argu);
         return _ret;
