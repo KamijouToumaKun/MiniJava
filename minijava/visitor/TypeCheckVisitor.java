@@ -2,7 +2,7 @@ package minijava.visitor;
 
 import minijava.symboltable.*;
 import minijava.syntaxtree.*;
-import minijava.typecheck.PrintError;
+import minijava.typecheck.ErrorPrinter;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -174,14 +174,14 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
 
         String parent = nClass.getParentClass();
         if(MClassList.instance.findClass(parent) == null) {
-            PrintError.instance.printError(n.f3.f0.beginLine,n.f3.f0.beginColumn,"no declaration for parent class " + parent);
+            ErrorPrinter.instance.printError(n.f3.f0.beginLine,n.f3.f0.beginColumn,"no declaration for parent class " + parent);
         }
         else {
             HashSet<String> parentSet = new HashSet<>();
             while(parent != null) {
                 if(parent.equals(nClass.getName())) {
                     //if find a circle extension,cut the extension relationship
-                    PrintError.instance.printError(n.f3.f0.beginLine,n.f3.f0.beginColumn,"circle extension");
+                    ErrorPrinter.instance.printError(n.f3.f0.beginLine,n.f3.f0.beginColumn,"circle extension");
                     nClass.setParentClass(null);
                     break;
                 }
@@ -209,7 +209,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
     public boolean classCheck(String name,int line,int column) {
         if(name.equals("int") || name.equals("int[]") || name.equals("boolean")) return true;
         if(MClassList.instance.findClass(name) != null) return true;
-        PrintError.instance.printError(line, column, "no class definition:" + name);
+        ErrorPrinter.instance.printError(line, column, "no class definition:" + name);
         return false;
     }
 
@@ -222,7 +222,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public boolean methodCheck(String name,MClass nClass,int line,int column) {
         if(nClass.getMethod(name) == null) {
-            PrintError.instance.printError(line,column," no method definition:" + name + " in class " + nClass.getName());
+            ErrorPrinter.instance.printError(line,column," no method definition:" + name + " in class " + nClass.getName());
             return false;
         }
         return true;
@@ -247,10 +247,10 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
             nVar = ((MCallList) argu).getContextMethod().getVar(name);
         }
         else {
-            PrintError.instance.printError(line, column, "find a var outside class and method " + name);
+            ErrorPrinter.instance.printError(line, column, "find a var outside class and method " + name);
         }
         if(nVar == null) {
-            PrintError.instance.printError(line,column,"Undefined var " + name);
+            ErrorPrinter.instance.printError(line,column,"Undefined var " + name);
             return false;
         }
         return true;
@@ -264,7 +264,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public boolean checkExpType(MType exp,String type,String printContent) {
         if(exp == null || type == null) {
-            //PrintError.instance.printError(exp.getLine(),exp.getColumn(),"find null type in expression type check");
+            //ErrorPrinter.instance.printError(exp.getLine(),exp.getColumn(),"find null type in expression type check");
             return false;
         }
 
@@ -275,14 +275,14 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         // no class for the expression
         MClass nClass = MClassList.instance.findClass(exp.getName());
         if(nClass == null) {
-            PrintError.instance.printError(exp.getLine(),exp.getColumn()," no class correspond to the expression");
+            ErrorPrinter.instance.printError(exp.getLine(),exp.getColumn()," no class correspond to the expression");
             return false;
         }
         String parent = nClass.getParentClass();
 
         // System.out.println(exp.getName() + type);
         /*if(type.equals("int") || type.equals("int[]") || type.equals("boolean")) {
-            PrintError.instance.printError(exp.getLine(),exp.getColumn()," try to give a non-base type value to a base-type var");
+            ErrorPrinter.instance.printError(exp.getLine(),exp.getColumn()," try to give a non-base type value to a base-type var");
             return false;
         }*/
         //check if type is the parent class of the expression
@@ -300,7 +300,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
             else parent = nClass.getParentClass();
         }
         if(!findParentClass) {
-            PrintError.instance.printError(exp.getLine(),exp.getColumn(),printContent);
+            ErrorPrinter.instance.printError(exp.getLine(),exp.getColumn(),printContent);
             return false;
         }
         return true;
@@ -771,7 +771,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         else nCallList = new MCallList(nMethod,((MCallList)argu).getContextMethod());
         n.f4.accept(this, nCallList);
         if(!nMethod.judgeParamList(nCallList.getmVarArrayList())) {
-            PrintError.instance.printError(methodCalled.getLine(), methodCalled.getColumn(), "function param no match");
+            ErrorPrinter.instance.printError(methodCalled.getLine(), methodCalled.getColumn(), "function param no match");
         }
         n.f5.accept(this, argu);
         return _ret;
@@ -785,7 +785,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         Object _ret=null;
         MType nType = (MType)n.f0.accept(this, argu);
         if(argu instanceof MCallList) {
-            ((MCallList) argu).getmVarArrayList().add(new MVar("", nType.getName(), false, null, null, 0, 0));
+            ((MCallList) argu).getmVarArrayList().add(new MVar("", nType.getName(), null, null, 0, 0));
         }
         n.f1.accept(this, argu);
         return _ret;
@@ -800,7 +800,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         n.f0.accept(this, argu);
         MType nType = (MType)n.f1.accept(this, argu);
         if(argu instanceof MCallList) {
-            ((MCallList) argu).getmVarArrayList().add(new MVar("", nType.getName(), false, null, null, 0, 0));
+            ((MCallList) argu).getmVarArrayList().add(new MVar("", nType.getName(), null, null, 0, 0));
         }
         return _ret;
     }
@@ -831,7 +831,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
                 nVar = ((MCallList) argu).getContextMethod().getVar(name);
             }
             if(nVar == null) {
-                PrintError.instance.printError(_ret.getLine(),_ret.getColumn(),"find a var not defined");
+                ErrorPrinter.instance.printError(_ret.getLine(),_ret.getColumn(),"find a var not defined");
             }
             else {
                 _ret.setName(nVar.getType());
@@ -885,7 +885,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
             nClassName = ((MCallList) argu).getContextMethod().getClassName();
         }
         else {
-            PrintError.instance.printError(n.f0.beginLine, n.f0.beginColumn, "find 'this' outside a method");
+            ErrorPrinter.instance.printError(n.f0.beginLine, n.f0.beginColumn, "find 'this' outside a method");
         }
         MClass nClass = MClassList.instance.findClass(nClassName);
         n.f0.accept(this, argu);

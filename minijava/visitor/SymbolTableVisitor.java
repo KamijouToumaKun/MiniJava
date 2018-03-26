@@ -1,7 +1,5 @@
 package minijava.visitor;
 
-
-// import com.sun.org.apache.xpath.internal.SourceTree;
 import minijava.symboltable.*;
 import minijava.syntaxtree.*;
 
@@ -116,7 +114,7 @@ public class SymbolTableVisitor extends GJDepthFirst<Object, Object> {
         n.f10.accept(this, nMethod);
 
         // add parameter for main method
-        MVar nVar = new MVar(n.f11.f0.tokenImage,"String[]",true,"main",n.f1.f0.tokenImage,n.f11.f0.beginLine,n.f11.f0.beginColumn);
+        MVar nVar = new MVar(n.f11.f0.tokenImage,"String[]","main",n.f1.f0.tokenImage,n.f11.f0.beginLine,n.f11.f0.beginColumn);
         if(!nMethod.addParam(nVar)) return null;
         n.f11.accept(this, nMethod);
 
@@ -201,11 +199,11 @@ public class SymbolTableVisitor extends GJDepthFirst<Object, Object> {
         String type = (String)n.f0.accept(this, argu);
 
         if(argu instanceof MClass) {
-            MVar nVar = new MVar(n.f1.f0.tokenImage,type,false,null,((MClass) argu).getName(),n.f1.f0.beginLine,n.f1.f0.beginColumn);
+            MVar nVar = new MVar(n.f1.f0.tokenImage,type,null,((MClass) argu).getName(),n.f1.f0.beginLine,n.f1.f0.beginColumn);
             if(!((MClass) argu).addVar(nVar)) return null;
         }
         else if(argu instanceof MMethod) {
-            MVar nVar = new MVar(n.f1.f0.tokenImage,type,false,((MMethod) argu).getName(),((MMethod) argu).getClassName(),n.f1.f0.beginLine,n.f1.f0.beginColumn);
+            MVar nVar = new MVar(n.f1.f0.tokenImage,type,((MMethod) argu).getName(),((MMethod) argu).getClassName(),n.f1.f0.beginLine,n.f1.f0.beginColumn);
             if(!((MMethod) argu).addVar(nVar)) return null;
         }
         n.f1.accept(this, argu);
@@ -273,7 +271,7 @@ public class SymbolTableVisitor extends GJDepthFirst<Object, Object> {
         String type = (String)n.f0.accept(this, argu);
         n.f1.accept(this, argu);
         if(argu instanceof MMethod) {
-            MVar nVar = new MVar(n.f1.f0.tokenImage,type,true,((MMethod) argu).getName(),((MMethod) argu).getClassName(),n.f1.f0.beginLine,n.f1.f0.beginColumn);
+            MVar nVar = new MVar(n.f1.f0.tokenImage,type,((MMethod) argu).getName(),((MMethod) argu).getClassName(),n.f1.f0.beginLine,n.f1.f0.beginColumn);
             if(!((MMethod) argu).addParam(nVar)) return null;
         }
         else {
