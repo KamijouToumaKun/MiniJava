@@ -519,21 +519,20 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         MType arrVar = (MType)n.f0.accept(this, argu);
         varCheck(arrVar.getName(),argu,arrVar.getLine(),arrVar.getColumn());
         arrVar.setName(changeIdentifier(arrVar, argu));
-        checkExpType(arrVar, "int[]", "type-mismatch for int[]; " + 
-            "line: " + arrVar.getLine() + "; colomn: " + arrVar.getColumn());
+        // checkExpType(arrVar, "int[]", "type-mismatch for int[]");
+        checkExpType(arrVar, "int[]", "left part of '[' is not int[]");
 
         n.f1.accept(this, argu);
 
         MType indexExp = (MType)n.f2.accept(this, argu);
-        checkExpType(indexExp, "int", "type-mismatch for index of an array, should be int; " + 
-            "line: " + indexExp.getLine() + "; colomn: " + indexExp.getColumn());
+        checkExpType(indexExp, "int", "type-mismatch for index of an array, should be int");
 
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
 
         MType exp = (MType)n.f5.accept(this, argu);
-        checkExpType(exp, "int", "type-mismatch for int[]; " + 
-            "line: " + exp.getLine() + "; colomn: " + exp.getColumn());
+        // checkExpType(exp, "int", "type-mismatch for int[]");
+        checkExpType(exp, "int", "type dis-match for expression");
 
         n.f6.accept(this, argu);
         return _ret;
