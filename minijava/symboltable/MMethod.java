@@ -1,14 +1,15 @@
 package minijava.symboltable;
 
-import minijava.typecheck.PrintError;
+import minijava.typecheck.ErrorPrinter;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 
 public class MMethod extends MType {
     protected String returnType;
     protected String className;
     protected ArrayList<MVar> mParamArrayList = new ArrayList<MVar>();
-    protected ArrayList<MVar> mVarArrayList = new ArrayList<MVar>();
+    protected HashSet<MVar> mVarSet = new HashSet<MVar>();
 
     public String getClassName() {
         return className;
@@ -31,87 +32,74 @@ public class MMethod extends MType {
     public boolean judgeEqualParamList(ArrayList<MVar> paramList) {
         if(mParamArrayList.size() != paramList.size()) return false;
         int s = paramList.size();
-        for(int i=0; i < s; i++) {
-            if(!mParamArrayList.get(i).type.equals(paramList.get(i).type)) return false;
+        for (int i=0; i < s; i++) {
+            if(!mParamArrayList.get(i).type.equals(paramList.get(i).type)) {
+                return false;
+            }
         }
         return true;
     }
 
     public boolean judgeParamList(ArrayList<MVar> paramList) {
-        if(mParamArrayList.size() != paramList.size()) return false;
+        if (mParamArrayList.size() != paramList.size()) {
+            return false;
+        }
+        // judge paramlist one by one
         int s = paramList.size();
-        for(int i=0; i < s; i++) {
-            if(!MClassList.instance.judgeParentClass(paramList.get(i).type, mParamArrayList.get(i).type)) return false;
+        for (int i=0; i < s; i++) {
+            if (!MClassList.instance.judgeParentClass(paramList.get(i).type, mParamArrayList.get(i).type)) {
+                return false;
+            }
         }
         return true;
     }
 
     public boolean repeatedParam(String paramName) {
-        int s = mParamArrayList.size();
-        for(int i = 0; i < s; i++) {
-            String ithName = mParamArrayList.get(i).getName();
-            if(paramName.equals(ithName)) return true;
+        for (MVar knownParam:mParamArrayList) {
+            if (paramName.equals(knownParam.getName())) {
+                return true;
+            }
         }
         return false;
     }
 
     public boolean addParam(MVar nParam) {
-        if(repeatedParam(nParam.getName())) {
-            PrintError.instance.printError(nParam.getLine(),nParam.getColumn(),"Param " + nParam.getName() + " repeated declared");
+        if (repeatedParam(nParam.getName())) {
+            ErrorPrinter.instance.printError(nParam.getLine(),nParam.getColumn(),"Param " + nParam.getName() + " repeated declared");
             return false;
+        } else {
+            mParamArrayList.add(nParam);
+            return true;
         }
-        mParamArrayList.add(nParam);
-        return true;
-    }
-
-    public boolean repeatedVar(String varName) {
-        int s = mVarArrayList.size();
-        for(int i = 0; i < s; i++) {
-            String ithName = mVarArrayList.get(i).getName();
-            if(varName.equals(ithName)) return true;
-        }
-        s = mParamArrayList.size();
-        for(int i = 0;i < s; i++) {
-            String ithName = mParamArrayList.get(i).getName();
-            if(varName.equals(ithName)) return true;
-        }
-        return false;
     }
 
     public boolean addVar(MVar nVar) {
-        if(repeatedVar(nVar.getName())) {
-            PrintError.instance.printError(nVar.getLine(),nVar.getColumn(),"Var " + nVar.getName() + " repeated declared");
+        if (!mVarSet.add(nVar)) {
+            ErrorPrinter.instance.printError(nVar.getLine(),nVar.getColumn(),"Var " + nVar.getName() + " repeated declared");
             return false;
+        } else {
+            return true;
         }
-        mVarArrayList.add(nVar);
-        return true;
     }
 
+    // no need to getParam by now
+
     public MVar getVar(String name) {
-        int s = mVarArrayList.size();
-        for(int i = 0; i < s; i++) {
-            if(mVarArrayList.get(i).getName().equals(name)) {
-                return mVarArrayList.get(i);
+        for (MVar knownVar:mVarSet) {
+            if (name.equals(knownVar.getName())) {
+                return knownVar;
             }
         }
-        s = mParamArrayList.size();
-        for(int i = 0; i < s; i++) {
-            if(mParamArrayList.get(i).getName().equals(name)) {
-                return mParamArrayList.get(i);
+        for (MVar knownParam:mParamArrayList) {
+            if (name.equals(knownParam.getName())) {
+                return knownParam;
             }
         }
         MClass nClass = MClassList.instance.findClass(className);
-        return nClass.getVar(name);
-    }
-
-    public int allocTemp(int currentTemp) {
-        int num = 0;
-        for(MVar mVar : mParamArrayList) {
-            mVar.setTempNum(++num);
+        if (nClass != null) {
+            return nClass.getVar(name);
+        } else { //that will not happen
+            return null;
         }
-        for(MVar mVar : mVarArrayList) {
-            mVar.setTempNum(currentTemp++);
-        }
-        return currentTemp;
     }
 }

@@ -1,15 +1,19 @@
 package minijava.symboltable;
 
-import minijava.typecheck.PrintError;
+import minijava.typecheck.ErrorPrinter;
 
+import java.util.HashSet;
 import java.util.ArrayList;
-import java.util.Collection;
 
 public class MClass extends MType {
 
-    protected ArrayList<MMethod> mMethodArrayList = new ArrayList<MMethod>();
-    protected ArrayList<MVar> mVarArrayList = new ArrayList<MVar>();
+    protected HashSet<MMethod> mMethodSet = new HashSet<MMethod>();
+    protected HashSet<MVar> mVarSet = new HashSet<MVar>();
     protected String parentClass;
+
+    public MClass(String name,int line,int column) {
+        super(name,line,column);
+    }
 
     public String getParentClass() {
         return parentClass;
@@ -19,134 +23,72 @@ public class MClass extends MType {
         this.parentClass = parentClass;
     }
 
-    public MClass(String name,int line,int column) {
-        super(name,line,column);
+    public HashSet<MMethod> getMethodSet() {
+        return mMethodSet;
+    }
+
+    public HashSet<MVar> getVarSet() {
+        return mVarSet;
     }
 
     public boolean repeatedMethod(String methodName,String returnType,ArrayList<MVar> paramList) {
         MClass nClass = this;
         MMethod nMethod = this.getMethod(methodName);
         //there will be no circle extension here
-        while(nClass != null) {
-            int s = nClass.mMethodArrayList.size();
-            for (int i = 0; i < s; i++) {
-                String ithName = nClass.mMethodArrayList.get(i).getName();
-                if (methodName.equals(ithName)) {
-                    if(!nClass.mMethodArrayList.get(i).judgeEqualParamList(paramList) || !returnType.equals(nClass.mMethodArrayList.get(i).getReturnType())) {
+        while (true) {
+            for (MMethod knownMethod:nClass.getMethodSet()) {
+                if (methodName.equals(knownMethod.getName())) {
+                    if (!knownMethod.judgeEqualParamList(paramList) || !returnType.equals(knownMethod.getReturnType())) {
                         //method name equal but param not equal
-                        PrintError.instance.printError(nMethod.getLine(), nMethod.getColumn(), "Method " + nMethod.getName() + " repeated declared");
+                        ErrorPrinter.instance.printError(nMethod.getLine(), nMethod.getColumn(), "Method " + nMethod.getName() + " repeated declared");
                         return true;
                     }
                 }
             }
-            if(nClass.getParentClass() != null) nClass = MClassList.instance.findClass(nClass.getParentClass());
-            else nClass = null;
-        }
-        return false;
-    }
-
-    public ArrayList<Integer> overrideMethod(String methodName) {
-        ArrayList<Integer> ans = new ArrayList<Integer>();
-        MClass nClass = MClassList.instance.findClass(this.getParentClass());
-        //there will be no circle extension here
-        while(nClass != null) {
-            int s = nClass.mMethodArrayList.size();
-            for (int i = 0; i < s; i++) {
-                String ithName = nClass.mMethodArrayList.get(i).getName();
-                if (methodName.equals(ithName)) {
-                    ans.add(nClass.mMethodArrayList.get(i).getOffset());
-                }
+            if(nClass.getParentClass() != null) {
+                nClass = MClassList.instance.findClass(nClass.getParentClass());
             }
-            if(nClass.getParentClass() != null) nClass = MClassList.instance.findClass(nClass.getParentClass());
-            else nClass = null;
-        }
-        return ans;
-    }
-
-    public int getVarSize() {
-        int ans = 0;
-        if(getParentClass() != null) {
-            MClass mClass = MClassList.instance.findClass(getParentClass());
-            ans = mClass.getVarSize();
-        }
-        //System.out.println(getName() + " " + mVarArrayList.size());
-        return ans+mVarArrayList.size()*4;
-    }
-
-    public int getMethodSize() {
-        int ans = 0;
-        if(getParentClass() != null) {
-            MClass mClass = MClassList.instance.findClass(getParentClass());
-            ans = mClass.getMethodSize();
-        }
-        return ans+mMethodArrayList.size()*4;
-    }
-
-    public ArrayList<MMethod> getMethodList() {
-        return mMethodArrayList;
-    }
-
-    public ArrayList<MVar> getmVarArrayList() {
-        return  mVarArrayList;
-    }
-
-    public boolean findMethodName(String name) {
-        int s = mMethodArrayList.size();
-        for(int i = 0;i < s; i++) {
-            if(name.equals(mMethodArrayList.get(i).getName())) return true;
-        }
-        return false;
-    }
-
-    public boolean findVarName(String name) {
-        int s = mVarArrayList.size();
-        for(int i = 0; i < s; i++) {
-            if(name.equals(mVarArrayList.get(i).getName())) return true;
+            else {
+                break;
+            }
         }
         return false;
     }
 
     public boolean addMethod(MMethod nMethod) {
-        if(repeatedMethod(nMethod.getName(),nMethod.getReturnType(),nMethod.getmParamArrayList())) {
+        if (!mMethodSet.add(nMethod)) {
+            ErrorPrinter.instance.printError(nMethod.getLine(),nMethod.getColumn(),"Method " + nMethod.getName() + " repeated declared");
             return false;
+        } else {
+            return true;
         }
-        mMethodArrayList.add(nMethod);
-        return true;
-    }
-
-    public boolean repeatedVar(String varName) {
-        int s = mVarArrayList.size();
-        for (int i = 0; i < s; i++) {
-            String ithName = mVarArrayList.get(i).getName();
-            if (varName.equals(ithName)) return true;
-        }
-        return false;
     }
 
     public boolean addVar(MVar nVar) {
-        if(repeatedVar(nVar.getName())) {
-            PrintError.instance.printError(nVar.getLine(),nVar.getColumn(),"Var " + nVar.getName() + " repeated declared");
+        if (!mVarSet.add(nVar)) {
+            ErrorPrinter.instance.printError(nVar.getLine(),nVar.getColumn(),"Var " + nVar.getName() + " repeated declared");
             return false;
+        } else {
+            return true;
         }
-        mVarArrayList.add(nVar);
-        return true;
     }
-
 
     //get a method object according to its name and paramList
     public MMethod getMethod(String name) {
         MClass nClass = this;
         //there will be no circle extension here
-        while(nClass != null) {
-            int s = nClass.mMethodArrayList.size();
-            for (int i = 0; i < s; i++) {
-                String ithName = nClass.mMethodArrayList.get(i).getName();
-                if (name.equals(ithName)) {
-                    return nClass.mMethodArrayList.get(i);
+        while (true) {
+            for (MMethod knownMethod:nClass.getMethodSet()) {
+                if (name.equals(knownMethod.getName())) {
+                    return knownMethod;
                 }
             }
-            if(nClass.getParentClass() != null) nClass = MClassList.instance.findClass(nClass.getParentClass());
-            else nClass = null;
+            if(nClass.getParentClass() != null) {
+                nClass = MClassList.instance.findClass(nClass.getParentClass());
+            }
+            else {
+                break;
+            }
         }
         return null;
     }
@@ -154,76 +96,17 @@ public class MClass extends MType {
     public MVar getVar(String name) {
         MClass nClass = this;
         //there will be no circle extension here
-        while(nClass != null) {
-            int s = nClass.mVarArrayList.size();
-            for (int i = 0; i < s; i++) {
-                String ithName = nClass.mVarArrayList.get(i).getName();
-                if (name.equals(ithName)) return nClass.mVarArrayList.get(i);
+        while (true) {
+            for (MVar knownVar:nClass.getVarSet()) {
+                if (name.equals(knownVar.getName())) return knownVar;
             }
-            if(nClass.getParentClass() != null) nClass = MClassList.instance.findClass(nClass.getParentClass());
-            else nClass = null;
+            if (nClass.getParentClass() != null) {
+                nClass = MClassList.instance.findClass(nClass.getParentClass());
+            }
+            else {
+                break;
+            }
         }
         return null;
-    }
-
-    /**
-     * mark the offset for each var and method in class
-     * @return whole size of this class and father class
-     */
-    public int varPosition() {
-        int offset = 0;
-        if (getParentClass() != null) {
-            MClass mClass = MClassList.instance.findClass(getParentClass());
-            offset += mClass.varPosition();
-        }
-        for (MVar mVar : mVarArrayList) {
-            mVar.setOffset(offset);
-            offset += 4;
-        }
-        return offset;
-    }
-
-    public int methodPosition() {
-        int offset = varPosition();
-        if(getParentClass() != null) {
-            MClass mClass = MClassList.instance.findClass(getParentClass());
-            offset += mClass.methodPosition();
-        }
-        for(MMethod mMethod : mMethodArrayList) {
-            mMethod.setOffset(offset);
-            String name = this.getName() + "_" + mMethod.getName();
-            offset += 4;
-        }
-        return offset;
-    }
-
-    public void completeClass() {
-        if(getParentClass() == null) return;
-        MClass parentClass = MClassList.instance.findClass(getParentClass());
-        parentClass.completeClass();
-        for(MMethod mMethod : parentClass.mMethodArrayList) {
-            if(findMethodName(mMethod.getName())) continue;
-            mMethodArrayList.add(mMethod);
-        }
-        for(MVar mVar : parentClass.mVarArrayList) {
-            if(findVarName(mVar.getName())) continue;
-            mVarArrayList.add(mVar);
-        }
-    }
-
-    public int allocTemp(int currentTemp) {
-        int offset = 4;
-        for(MVar mVar : mVarArrayList) {
-            mVar.setOffset(offset);
-            offset += 4;
-        }
-        offset = 0;
-        for(MMethod mMethod : mMethodArrayList) {
-            mMethod.setOffset(offset);
-            String name = getName() + "_" + mMethod.getName();
-            offset += 4;
-            currentTemp = mMethod.allocTemp(currentTemp);
-        }
-        return currentTemp;
     }
 }

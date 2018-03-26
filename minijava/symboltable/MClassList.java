@@ -1,67 +1,36 @@
 package minijava.symboltable;
 
-import minijava.typecheck.PrintError;
+import minijava.typecheck.ErrorPrinter;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 
 public class MClassList extends MType {
     public static MClassList instance = new MClassList();
 
-    private static int tempNumber = 20,labelNumber = 0;
-    private ArrayList<MClass> mClassArrayList = new ArrayList<MClass>();
+    private HashSet<MClass> mClassSet = new HashSet<MClass>();
 
     private MClassList(){
-        mClassArrayList.add(new MClass("int",0,0));
-        mClassArrayList.add(new MClass("boolean",0,0));
-        mClassArrayList.add(new MClass("int[]",0,0));
-    }
-
-    public ArrayList<MClass> getmClassArrayList() {
-        return mClassArrayList;
-    }
-
-    public void setLabelNumber(int labelNumber) {
-        MClassList.labelNumber = labelNumber;
-    }
-
-    public int getLabelNumber() {
-        return labelNumber;
-    }
-
-    public int getTempNum() {
-        return this.tempNumber;
-    }
-
-    public void setTempNum(int tempNum) {
-        this.tempNumber = tempNum;
-    }
-
-    //judge repeated class
-    public boolean repeatedClass(String className) {
-        int s = mClassArrayList.size();
-        for(int i = 0; i < s; i++) {
-            String ithName = mClassArrayList.get(i).getName();
-            if(className.equals(ithName)) return true;
-        }
-        return false;
+        mClassSet.add(new MClass("int",0,0));
+        mClassSet.add(new MClass("int[]",0,0));
+        mClassSet.add(new MClass("boolean",0,0));
     }
 
     //insert a new class in the list
     public boolean addClass(MClass nClass) {
-        if(repeatedClass(nClass.getName())) {
-            PrintError.instance.printError(nClass.getLine(),nClass.getColumn(),"Class " + nClass.getName() + " repeated declared");
+        if(!mClassSet.add(nClass)) {
+            ErrorPrinter.instance.printError(nClass.getLine(),nClass.getColumn(),"Class " + nClass.getName() + " repeated declared");
             return false;
+        } else {
+            return true;
         }
-        mClassArrayList.add(nClass);
-        return true;
     }
 
     //search a class according to name
     public MClass findClass(String name) {
-        int s = mClassArrayList.size();
-        for(int i = 0; i < s; i++) {
-            String ithName = mClassArrayList.get(i).getName();
-            if(name.equals(ithName)) return mClassArrayList.get(i);
+        for (MClass knownClass:mClassSet) {
+            if (name.equals(knownClass.getName())) {
+                return knownClass;
+            }
         }
         return null;
     }
@@ -69,24 +38,13 @@ public class MClassList extends MType {
     //judge whether class b is the father class of class a
     public boolean judgeParentClass(String a,String b) {
         MClass aa = MClassList.instance.findClass(a);
-        while(aa != null) {
-            if(aa.getName().equals(b)) return true;
+        while (aa != null) {
+            if (aa.getName().equals(b)) {
+                return true;
+            }
             String parent = aa.getParentClass();
             aa = MClassList.instance.findClass(parent);
         }
         return false;
-    }
-
-    public void completeClass() {
-        for(MClass mClass : mClassArrayList) {
-            mClass.completeClass();
-        }
-    }
-
-    public int allocTemp(int currentTemp) {
-        for(MClass mClass : MClassList.instance.mClassArrayList) {
-           currentTemp =  mClass.allocTemp(currentTemp);
-        }
-        return currentTemp;
     }
 }
