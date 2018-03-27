@@ -142,7 +142,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         Object _ret=null;
         n.f0.accept(this, argu);
 
-        String name = ((MType)n.f1.accept(this, argu)).getName();;
+        String name = ((MType)n.f1.accept(this, argu)).getName();
         MClass nClass = MClassList.instance.findClass(name);
 
         n.f2.accept(this, nClass);
@@ -166,7 +166,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         Object _ret=null;
         n.f0.accept(this, argu);
 
-        String name = ((MType)n.f1.accept(this, argu)).getName();;
+        String name = ((MType)n.f1.accept(this, argu)).getName();
         MClass nClass = MClassList.instance.findClass(name);
 
         n.f2.accept(this, nClass);
@@ -178,8 +178,8 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         }
         else {
             HashSet<String> parentSet = new HashSet<>();
-            while(parent != null) {
-                if(parent.equals(nClass.getName())) {
+            while (parent != null) {
+                if (parent.equals(nClass.getName())) {
                     //if find a circle extension,cut the extension relationship
                     ErrorPrinter.instance.printError(n.f3.f0.beginLine,n.f3.f0.beginColumn,"circle extension");
                     nClass.setParentClass(null);
@@ -188,8 +188,12 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
                 else if(parentSet.contains(parent)) break;
                 parentSet.add(parent);
                 MClass parentClass = MClassList.instance.findClass(parent);
-                if(parentClass != null) parent = parentClass.getParentClass();
-                else break;
+                if(parentClass != null) {
+                    parent = parentClass.getParentClass();
+                }
+                else {
+                    break;
+                }
             }
         }
 
@@ -280,7 +284,6 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         }
         String parent = nClass.getParentClass();
 
-        // System.out.println(exp.getName() + type);
         /*if(type.equals("int") || type.equals("int[]") || type.equals("boolean")) {
             ErrorPrinter.instance.printError(exp.getLine(),exp.getColumn()," try to give a non-base type value to a base-type var");
             return false;
@@ -289,7 +292,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         boolean findParentClass = false;
         HashSet<String> parentSet = new HashSet<>();
         while (parent != null) {
-            if(parent.equals(type)) {
+            if (parent.equals(type)) {
                 findParentClass = true;
                 break;
             }
@@ -313,7 +316,8 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(VarDeclaration n, Object argu) {
         Object _ret=null;
-        String typename = ((MType)n.f0.accept(this, argu)).getName();;
+        String typename = ((MType)n.f0.accept(this, argu)).getName();
+
         classCheck(typename, n.f1.f0.beginLine, n.f1.f0.beginColumn);
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
@@ -339,7 +343,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         Object _ret=null;
         n.f0.accept(this, argu);
 
-        MType nMtype = (MType)n.f1.accept(this, argu);;
+        MType nMtype = (MType)n.f1.accept(this, argu);
         classCheck(nMtype.getName(), nMtype.getLine(), nMtype.getColumn());
 
         MMethod nMethod = null;
@@ -348,7 +352,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
             MClass nClass = MClassList.instance.findClass(nMethod.getClassName());
             nClass.repeatedMethod(nMethod.getName(),nMethod.getReturnType(),nMethod.getmParamArrayList());
         }
-        else {
+        else {//will that happen?
             System.out.println("a method not in class");
         }
 
@@ -361,6 +365,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         n.f9.accept(this, nMethod);
 
         MType type = (MType)n.f10.accept(this, nMethod);
+        checkExpNotInit(type, "some var in return expression has not been initialized");
         checkExpType(type,nMethod.getReturnType()," no match for the return type");
         n.f11.accept(this, nMethod);
         n.f12.accept(this, nMethod);
@@ -384,7 +389,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(FormalParameter n, Object argu) {
         Object _ret=null;
-        String type = ((MType)n.f0.accept(this, argu)).getName();;
+        String type = ((MType)n.f0.accept(this, argu)).getName();
         classCheck(type, n.f1.f0.beginLine, n.f1.f0.beginColumn);
 
         n.f1.accept(this, argu);
@@ -483,6 +488,47 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         if(nVar == null) return null;
         return nVar.getType();
     }
+
+    public boolean checkExpNotInit(MType exp, String printContent) {
+        if (exp == null) {
+            // ErrorPrinter.instance.printError(exp.getLine(), exp.getColumn(), 
+                // "calculation error and exp is of null type");
+            return true;
+        } else if (exp.getHasInit() == -1) {
+            ErrorPrinter.instance.printError(exp.getLine(), exp.getColumn(), printContent);
+            return true;
+        } else {
+            return false;
+        }
+    }
+    public boolean checkExpDefinite(MType exp) {
+        if (exp == null) {
+            return false;
+        } else if (exp.getHasInit() == 1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    public boolean checkExpDefiniteLength(MType exp) {
+        if (exp == null || !exp.getName().equals("int[]")) {
+            return false;
+        } else if (exp.getHasInitLength() == 1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    public void checkOutOfRange(MType exp1, MType exp2) {
+        if (checkExpDefiniteLength(exp1) && checkExpDefinite(exp2) &&
+            exp2.getName().equals("int") &&
+            exp1.getLength() <= exp2.getIntValue()) {
+            ErrorPrinter.instance.printError(exp2.getLine(), exp2.getColumn(), 
+                "index out of range");
+        }
+    }
+
+
     /**
      * f0 -> Identifier()
      * f1 -> "="
@@ -493,12 +539,32 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         Object _ret=null;
         MType nType = (MType)n.f0.accept(this, argu);
         varCheck(nType.getName(), argu, nType.getLine(), nType.getColumn());
+        
+        //get mVar before nType is renamed to type before name
+        MVar mVar = ((MMethod)argu).getVar(nType.getName());
+        
         nType.setName(changeIdentifier(nType, argu));
-
-
+    
         n.f1.accept(this, argu);
 
         MType exp = (MType)n.f2.accept(this, argu);
+        if (!checkExpNotInit(exp, "some var in assignment expression has not been initialized")) {
+            if (argu instanceof MMethod && mVar != null) {
+                if (checkExpDefinite(exp)) {
+                    mVar.setHasInit(1);
+                    mVar.setIntValue(exp.getIntValue());
+                    mVar.setBooleanValue(exp.getBooleanValue());
+                } else {
+                    mVar.setHasInit(0);
+                }
+                if (checkExpDefiniteLength(exp)) {
+                    mVar.setHasInitLength(1);
+                    mVar.setLength(exp.getLength());
+                } else {
+                    mVar.setHasInitLength(0);
+                }
+            }
+        }
         checkExpType(exp, nType.getName(), "type dis-match for expression");
 
         n.f3.accept(this, argu);
@@ -519,18 +585,26 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         MType arrVar = (MType)n.f0.accept(this, argu);
         varCheck(arrVar.getName(),argu,arrVar.getLine(),arrVar.getColumn());
         arrVar.setName(changeIdentifier(arrVar, argu));
+
         // checkExpType(arrVar, "int[]", "type-mismatch for int[]");
         checkExpType(arrVar, "int[]", "left part of '[' is not int[]");
 
         n.f1.accept(this, argu);
 
         MType indexExp = (MType)n.f2.accept(this, argu);
+        checkExpNotInit(indexExp, "some var in index expression has not been initialized");
+        checkOutOfRange(arrVar, indexExp);
         checkExpType(indexExp, "int", "type-mismatch for index of an array, should be int");
 
         n.f3.accept(this, argu);
         n.f4.accept(this, argu);
 
         MType exp = (MType)n.f5.accept(this, argu);
+        if (!checkExpNotInit(exp, "some var in array assignment expression has not been initialized")) {
+            if (argu instanceof MMethod) {   
+                // an arrVar's hasInit must have been 0
+            }
+        }
         // checkExpType(exp, "int", "type-mismatch for int[]");
         checkExpType(exp, "int", "type dis-match for expression");
 
@@ -553,6 +627,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         n.f1.accept(this, argu);
 
         MType exp = (MType)n.f2.accept(this, argu);
+        checkExpNotInit(exp, "some var in if expression has not been initialized");
         checkExpType(exp, "boolean", "not boolean type used for condition");
 
         n.f3.accept(this, argu);
@@ -575,6 +650,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         n.f1.accept(this, argu);
 
         MType exp = (MType)n.f2.accept(this, argu);
+        checkExpNotInit(exp, "some var in while expression has not been initialized");
         checkExpType(exp,"boolean","not boolean type used for condition");
 
         n.f3.accept(this, argu);
@@ -595,6 +671,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         n.f1.accept(this, argu);
 
         MType exp = (MType)n.f2.accept(this, argu);
+        checkExpNotInit(exp, "some var in print expression has not been initialized");
         checkExpType(exp,"int","print a non-digital expression");
 
         n.f3.accept(this, argu);
@@ -615,7 +692,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(Expression n, Object argu) {
         MType _ret = (MType)n.f0.accept(this, argu);
-
+        
         return _ret;
     }
 
@@ -626,14 +703,24 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(AndExpression n, Object argu) {
         MType exp1 = (MType)n.f0.accept(this, argu);
+        boolean exp1NotInit = checkExpNotInit(
+            exp1, "left part of '&&' has not been initialized");
         checkExpType(exp1,"boolean","left part of '&&' is not boolean");
 
         n.f1.accept(this, argu);
 
         MType exp2 = (MType)n.f2.accept(this, argu);
+        boolean exp2NotInit = checkExpNotInit(
+            exp2, "right part of '&&' has not been initialized");
         checkExpType(exp2,"boolean","right part of '&&' is not boolean");
-        //System.out.println("***" + exp1.getName() + exp2.getName());
-        return new MType("boolean",exp1.getLine(),exp1.getColumn());
+
+        MType nMtype = new MType("boolean",exp1.getLine(),exp1.getColumn());
+        if (exp1NotInit || exp2NotInit) {
+            nMtype.setHasInit(-1);
+        } else if (checkExpDefinite(exp1) && checkExpDefinite(exp2)) {
+            nMtype.setBooleanValue(exp1.getBooleanValue() && exp2.getBooleanValue());
+        }
+        return nMtype;
     }
 
     /**
@@ -643,13 +730,24 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(CompareExpression n, Object argu) {
         MType exp1 = (MType)n.f0.accept(this, argu);
+        boolean exp1NotInit = checkExpNotInit(
+            exp1, "left part of '<' has not been initialized");
         checkExpType(exp1, "int", "left part of '<' is not int");
 
         n.f1.accept(this, argu);
 
         MType exp2 = (MType)n.f2.accept(this, argu);
+        boolean exp2NotInit = checkExpNotInit(
+            exp2, "right part of '<' has not been initialized");
         checkExpType(exp2, "int", "right part of '<' is not int");
-        return new MType("boolean",exp1.getLine(),exp1.getColumn());
+        
+        MType nMtype = new MType("boolean",exp1.getLine(),exp1.getColumn());
+        if (exp1NotInit || exp2NotInit) {
+            nMtype.setHasInit(-1);
+        } else if (checkExpDefinite(exp1) && checkExpDefinite(exp2)) {
+            nMtype.setBooleanValue(exp1.getIntValue() < exp2.getIntValue());
+        }
+        return nMtype;
     }
 
     /**
@@ -659,13 +757,25 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(PlusExpression n, Object argu) {
         MType exp1 = (MType)n.f0.accept(this, argu);
+        boolean exp1NotInit = checkExpNotInit(
+            exp1, "left part of '+' has not been initialized");
         checkExpType(exp1, "int", "left part of '+' is not int");
 
         n.f1.accept(this, argu);
 
         MType exp2 = (MType)n.f2.accept(this, argu);
+        boolean exp2NotInit = checkExpNotInit(
+            exp2, "right part of '+' has not been initialized");
         checkExpType(exp2, "int", "right part of '+' is not int");
-        return new MType("int",exp1.getLine(),exp1.getColumn());
+        
+        MType nMtype = new MType("int",exp1.getLine(),exp1.getColumn());
+        if (exp1NotInit || exp2NotInit) {
+            nMtype.setHasInit(-1);
+        } else if (checkExpDefinite(exp1) && checkExpDefinite(exp2)) {
+            nMtype.setHasInit(1);
+            nMtype.setIntValue(exp1.getIntValue() + exp2.getIntValue());
+        }
+        return nMtype;
     }
 
     /**
@@ -675,13 +785,25 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(MinusExpression n, Object argu) {
         MType exp1 = (MType)n.f0.accept(this, argu);
+        boolean exp1NotInit = checkExpNotInit(
+            exp1, "left part of '-' has not been initialized");
         checkExpType(exp1, "int", "left part of '-' is not int");
 
         n.f1.accept(this, argu);
 
         MType exp2 = (MType)n.f2.accept(this, argu);
+        boolean exp2NotInit = checkExpNotInit(
+            exp2, "right part of '-' has not been initialized");
         checkExpType(exp2, "int", "right part of '-' is not int");
-        return new MType("int",exp1.getLine(),exp1.getColumn());
+        
+        MType nMtype = new MType("int",exp1.getLine(),exp1.getColumn());
+        if (exp1NotInit || exp2NotInit) {
+            nMtype.setHasInit(-1);
+        } else if (checkExpDefinite(exp1) && checkExpDefinite(exp2)) {
+            nMtype.setHasInit(1);
+            nMtype.setIntValue(exp1.getIntValue() - exp2.getIntValue());
+        }
+        return nMtype;
     }
 
     /**
@@ -691,13 +813,25 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(TimesExpression n, Object argu) {
         MType exp1 = (MType)n.f0.accept(this, argu);
+        boolean exp1NotInit = checkExpNotInit(
+            exp1, "left part of '*' has not been initialized");
         checkExpType(exp1, "int", "left part of '*' is not int");
 
         n.f1.accept(this, argu);
 
         MType exp2 = (MType)n.f2.accept(this, argu);
+        boolean exp2NotInit = checkExpNotInit(
+            exp2, "right part of '*' has not been initialized");
         checkExpType(exp2, "int", "right part of '*' is not int");
-        return new MType("int",exp1.getLine(),exp1.getColumn());
+        
+        MType nMtype = new MType("int",exp1.getLine(),exp1.getColumn());
+        if (exp1NotInit || exp2NotInit) {
+            nMtype.setHasInit(-1);
+        } else if (checkExpDefinite(exp1) && checkExpDefinite(exp2)) {
+            nMtype.setHasInit(1);
+            nMtype.setIntValue(exp1.getIntValue() * exp2.getIntValue());
+        }
+        return nMtype;
     }
 
     /**
@@ -708,15 +842,25 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(ArrayLookup n, Object argu) {
         MType exp1 = (MType)n.f0.accept(this, argu);
+        boolean exp1NotInit = checkExpNotInit(exp1, "array has not been initialized");
         checkExpType(exp1, "int[]", "left part of '[' is not int[]");
 
         n.f1.accept(this, argu);
 
         MType exp2 = (MType)n.f2.accept(this, argu);
+        boolean exp2NotInit = checkExpNotInit(exp2, "some var in index expression has not been initialized");
         checkExpType(exp2, "int", "index of an array is not int");
 
         n.f3.accept(this,argu);
-        return new MType("int",exp1.getLine(),exp1.getColumn());
+        
+        checkOutOfRange(exp1, exp2);
+        MType nMtype = new MType("int",exp1.getLine(),exp1.getColumn());
+        if (exp1NotInit || exp2NotInit) {
+            nMtype.setHasInit(-1);
+        } /*else if (checkExpDefinite(exp1) && checkExpDefinite(exp2)) {
+            //that will not happen
+        }*/
+        return nMtype;
     }
 
     /**
@@ -730,7 +874,12 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
 
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
-        return new MType("int",exp.getLine(),exp.getColumn());
+        MType mType = new MType("int",exp.getLine(),exp.getColumn());
+        if (exp.getLength() != -1) {
+            mType.setHasInit(1);
+            mType.setIntValue(exp.getLength());
+        }
+        return mType;
     }
 
     /**
@@ -769,10 +918,17 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
             nCallList = new MCallList(nMethod,(MMethod)argu);
         }
         else nCallList = new MCallList(nMethod,((MCallList)argu).getContextMethod());
+
         n.f4.accept(this, nCallList);
+        for (MVar mVar:nCallList.getmVarArrayList()) {
+            if (checkExpNotInit(mVar, "param has not been initialized")) {
+                _ret.setHasInit(-1);
+            }
+        }
         if(!nMethod.judgeParamList(nCallList.getmVarArrayList())) {
             ErrorPrinter.instance.printError(methodCalled.getLine(), methodCalled.getColumn(), "function param no match");
         }
+
         n.f5.accept(this, argu);
         return _ret;
     }
@@ -785,7 +941,9 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         Object _ret=null;
         MType nType = (MType)n.f0.accept(this, argu);
         if(argu instanceof MCallList) {
-            ((MCallList) argu).getmVarArrayList().add(new MVar("", nType.getName(), null, null, 0, 0));
+            MVar mTempVar = new MVar("", nType.getName(), null, null, nType.getLine(), nType.getColumn());
+            mTempVar.setHasInit(nType.getHasInit());
+            ((MCallList) argu).getmVarArrayList().add(mTempVar);
         }
         n.f1.accept(this, argu);
         return _ret;
@@ -800,7 +958,9 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         n.f0.accept(this, argu);
         MType nType = (MType)n.f1.accept(this, argu);
         if(argu instanceof MCallList) {
-            ((MCallList) argu).getmVarArrayList().add(new MVar("", nType.getName(), null, null, 0, 0));
+            MVar mTempVar = new MVar("", nType.getName(), null, null, nType.getLine(), nType.getColumn());
+            mTempVar.setHasInit(nType.getHasInit());
+            ((MCallList) argu).getmVarArrayList().add(mTempVar);
         }
         return _ret;
     }
@@ -835,6 +995,11 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
             }
             else {
                 _ret.setName(nVar.getType());
+                _ret.setHasInitLength(nVar.getHasInitLength());
+                _ret.setLength(nVar.getLength()); 
+                _ret.setHasInit(nVar.getHasInit()); 
+                _ret.setIntValue(nVar.getIntValue());
+                _ret.setBooleanValue(nVar.getBooleanValue());
             }
         }
         return _ret;
@@ -845,7 +1010,10 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(IntegerLiteral n, Object argu) {
         n.f0.accept(this, argu);
-        return new MType("int",n.f0.beginLine,n.f0.beginColumn);
+        MType nMtype = new MType("int",n.f0.beginLine,n.f0.beginColumn);
+        nMtype.setHasInit(1);
+        nMtype.setIntValue(Integer.valueOf(n.f0.tokenImage));
+        return nMtype;
     }
 
     /**
@@ -853,7 +1021,10 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(TrueLiteral n, Object argu) {
         n.f0.accept(this, argu);
-        return new MType("boolean",n.f0.beginLine,n.f0.beginColumn);
+        MType nMtype = new MType("boolean",n.f0.beginLine,n.f0.beginColumn);
+        nMtype.setHasInit(1);
+        nMtype.setBooleanValue(true);
+        return nMtype;
     }
 
     /**
@@ -861,7 +1032,10 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public Object visit(FalseLiteral n, Object argu) {
         n.f0.accept(this, argu);
-        return new MType("boolean",n.f0.beginLine,n.f0.beginColumn);
+        MType nMtype = new MType("boolean",n.f0.beginLine,n.f0.beginColumn);
+        nMtype.setHasInit(1);
+        nMtype.setBooleanValue(false);
+        return nMtype;
     }
 
     /**
@@ -905,10 +1079,20 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         n.f2.accept(this, argu);
 
         MType exp = (MType)n.f3.accept(this, argu);
+        checkExpNotInit(exp, "some var in size expression has not been initialized");
         checkExpType(exp,"int","index of an array in definition is not a int");
 
         n.f4.accept(this, argu);
-        return new MType("int[]",exp.getLine(),exp.getColumn());
+        MType mType = new MType("int[]",exp.getLine(),exp.getColumn());
+        if (exp.getName().equals("int") && checkExpDefinite(exp)) {
+            mType.setHasInitLength(1);
+            mType.setLength(exp.getIntValue());
+            mType.setHasInit(1);
+            mType.setIntValue(0);
+        } else {
+            mType.setHasInitLength(0);//no need: 0 is default value
+        }
+        return mType;
     }
 
     /**
@@ -935,6 +1119,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
     public Object visit(NotExpression n, Object argu) {
         n.f0.accept(this, argu);
         MType exp = (MType)n.f1.accept(this, argu);
+        checkExpNotInit(exp, "some var in not expression has not been initialized");
         checkExpType(exp,"boolean","expression followed ! is not boolean");
         return new MType("boolean",exp.getLine(),exp.getColumn());
     }
@@ -947,6 +1132,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
     public Object visit(BracketExpression n, Object argu) {
         n.f0.accept(this, argu);
         MType _ret = (MType)n.f1.accept(this, argu);
+        // no need to checkExpNotInit(exp) again;
         n.f2.accept(this, argu);
         return _ret;
     }

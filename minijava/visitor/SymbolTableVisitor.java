@@ -194,16 +194,32 @@ public class SymbolTableVisitor extends GJDepthFirst<Object, Object> {
      * f1 -> Identifier()
      * f2 -> ";"
      */
+    // in definition, if type==int/boolean and argu==method, setHasInit(-1)
     public Object visit(VarDeclaration n, Object argu) {
         Object _ret=null;
         String type = (String)n.f0.accept(this, argu);
 
         if(argu instanceof MClass) {
             MVar nVar = new MVar(n.f1.f0.tokenImage,type,null,((MClass) argu).getName(),n.f1.f0.beginLine,n.f1.f0.beginColumn);
+            //-----
+            if (type.equals("int") || type.equals("boolean")) {
+                nVar.setHasInit(1);
+                nVar.setIntValue(0);
+                nVar.setBooleanValue(false);
+            } else if (type.equals("int[]")) {
+                nVar.setHasInitLength(-1);
+            }
+            //-----
             if(!((MClass) argu).addVar(nVar)) return null;
         }
         else if(argu instanceof MMethod) {
             MVar nVar = new MVar(n.f1.f0.tokenImage,type,((MMethod) argu).getName(),((MMethod) argu).getClassName(),n.f1.f0.beginLine,n.f1.f0.beginColumn);
+            //-----
+            if (type.equals("int") || type.equals("int[]") || type.equals("boolean")) {
+                nVar.setHasInitLength(-1);
+                nVar.setHasInit(-1);
+            }
+            //-----
             if(!((MMethod) argu).addVar(nVar)) return null;
         }
         n.f1.accept(this, argu);
