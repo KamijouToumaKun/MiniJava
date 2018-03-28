@@ -1096,7 +1096,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
 
         n.f4.accept(this, argu);
         MType mType = new MType("int[]",exp.getLine(),exp.getColumn());
-        if (exp.getName().equals("int") && checkExpDefinite(exp)) {
+        if (checkExpDefinite(exp) && exp.getName().equals("int")) {
             mType.setHasInitLength(1);
             mType.setLength(exp.getIntValue());
             mType.setHasInit(0);
