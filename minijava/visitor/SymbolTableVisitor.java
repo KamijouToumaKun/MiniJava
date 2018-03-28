@@ -207,6 +207,7 @@ public class SymbolTableVisitor extends GJDepthFirst<Object, Object> {
                 nVar.setIntValue(0);
                 nVar.setBooleanValue(false);
             } else if (type.equals("int[]")) {
+                nVar.setHasInit(-1);
                 nVar.setHasInitLength(-1);
             }
             //-----

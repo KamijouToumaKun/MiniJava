@@ -174,14 +174,16 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
 
         String parent = nClass.getParentClass();
         if(MClassList.instance.findClass(parent) == null) {
-            ErrorPrinter.instance.printError(n.f3.f0.beginLine,n.f3.f0.beginColumn,"no declaration for parent class " + parent);
+            ErrorPrinter.instance.printError(n.f3.f0.beginLine, n.f3.f0.beginColumn,
+                "no declaration for parent class " + parent);
         }
         else {
             HashSet<String> parentSet = new HashSet<>();
             while (parent != null) {
                 if (parent.equals(nClass.getName())) {
                     //if find a circle extension,cut the extension relationship
-                    ErrorPrinter.instance.printError(n.f3.f0.beginLine,n.f3.f0.beginColumn,"circle extension");
+                    ErrorPrinter.instance.printError(n.f3.f0.beginLine, n.f3.f0.beginColumn,
+                        "circle extension");
                     nClass.setParentClass(null);
                     break;
                 }
@@ -211,8 +213,12 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      * @param column:begin column of the object of this class
      */
     public boolean classCheck(String name,int line,int column) {
-        if(name.equals("int") || name.equals("int[]") || name.equals("boolean")) return true;
-        if(MClassList.instance.findClass(name) != null) return true;
+        if (name.equals("int") || name.equals("int[]") || name.equals("boolean")) {
+            return true;
+        }
+        else if(MClassList.instance.findClass(name) != null) {
+            return true;
+        }
         ErrorPrinter.instance.printError(line, column, "no class definition:" + name);
         return false;
     }
@@ -224,9 +230,10 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      * @param line
      * @param column
      */
-    public boolean methodCheck(String name,MClass nClass,int line,int column) {
+    public boolean methodCheck(String name, MClass nClass, int line, int column) {
         if(nClass.getMethod(name) == null) {
-            ErrorPrinter.instance.printError(line,column," no method definition:" + name + " in class " + nClass.getName());
+            ErrorPrinter.instance.printError(line, column,
+                " no method definition:" + name + " in class " + nClass.getName());
             return false;
         }
         return true;
@@ -251,10 +258,11 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
             nVar = ((MCallList) argu).getContextMethod().getVar(name);
         }
         else {
-            ErrorPrinter.instance.printError(line, column, "find a var outside class and method " + name);
+            ErrorPrinter.instance.printError(line, column, 
+                "find a var outside class and method " + name);
         }
         if(nVar == null) {
-            ErrorPrinter.instance.printError(line,column,"Undefined var " + name);
+            ErrorPrinter.instance.printError(line, column, "Undefined var " + name);
             return false;
         }
         return true;
@@ -268,7 +276,8 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
      */
     public boolean checkExpType(MType exp,String type,String printContent) {
         if(exp == null || type == null) {
-            //ErrorPrinter.instance.printError(exp.getLine(),exp.getColumn(),"find null type in expression type check");
+            //ErrorPrinter.instance.printError(exp.getLine(), exp.getColumn(),
+                "find null type in expression type check");
             return false;
         }
 
@@ -279,13 +288,15 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         // no class for the expression
         MClass nClass = MClassList.instance.findClass(exp.getName());
         if(nClass == null) {
-            ErrorPrinter.instance.printError(exp.getLine(),exp.getColumn()," no class correspond to the expression");
+            ErrorPrinter.instance.printError(exp.getLine(), exp.getColumn(),
+                " no class correspond to the expression");
             return false;
         }
         String parent = nClass.getParentClass();
 
         /*if(type.equals("int") || type.equals("int[]") || type.equals("boolean")) {
-            ErrorPrinter.instance.printError(exp.getLine(),exp.getColumn()," try to give a non-base type value to a base-type var");
+            ErrorPrinter.instance.printError(exp.getLine(), exp.getColumn(),
+            " try to give a non-base type value to a base-type var");
             return false;
         }*/
         //check if type is the parent class of the expression
@@ -858,7 +869,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         if (exp1NotInit || exp2NotInit) {
             nMtype.setHasInit(-1);
         } /*else if (checkExpDefinite(exp1) && checkExpDefinite(exp2)) {
-            //that will not happen
+            //don't do that
         }*/
         return nMtype;
     }
@@ -875,7 +886,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         n.f1.accept(this, argu);
         n.f2.accept(this, argu);
         MType mType = new MType("int",exp.getLine(),exp.getColumn());
-        if (exp.getLength() != -1) {
+        if (checkExpDefiniteLength(exp)) {
             mType.setHasInit(1);
             mType.setIntValue(exp.getLength());
         }
@@ -926,7 +937,8 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
             }
         }
         if(!nMethod.judgeParamList(nCallList.getmVarArrayList())) {
-            ErrorPrinter.instance.printError(methodCalled.getLine(), methodCalled.getColumn(), "function param no match");
+            ErrorPrinter.instance.printError(methodCalled.getLine(), methodCalled.getColumn(),
+                "function param no match");
         }
 
         n.f5.accept(this, argu);
@@ -1087,8 +1099,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         if (exp.getName().equals("int") && checkExpDefinite(exp)) {
             mType.setHasInitLength(1);
             mType.setLength(exp.getIntValue());
-            mType.setHasInit(1);
-            mType.setIntValue(0);
+            mType.setHasInit(0);
         } else {
             mType.setHasInitLength(0);//no need: 0 is default value
         }
