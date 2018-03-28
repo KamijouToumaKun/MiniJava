@@ -41,7 +41,10 @@ public class Main {
             // InputStream is = new FileInputStream("test/QuickSort.java");
             // InputStream is = new FileInputStream("test/TreeVisitor-error.java");
             // InputStream is = new FileInputStream("test/TreeVisitor.java");
-            InputStream is = new FileInputStream("test/NoB.java");
+            // InputStream is = new FileInputStream("test/IndexRange-error.java");
+            // InputStream is = new FileInputStream("test/IndexRange.java");
+            // InputStream is = new FileInputStream("test/Initialization-error.java");
+            InputStream is = new FileInputStream("test/Initialization.java");
 			
             Node root = new MiniJavaParser(is).Goal();
 			root.accept(new SymbolTableVisitor(),MClassList.instance);
