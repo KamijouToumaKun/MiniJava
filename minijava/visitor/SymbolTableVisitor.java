@@ -153,6 +153,7 @@ public class SymbolTableVisitor extends GJDepthFirst<Object, Object> {
         n.f1.accept(this, argu);
 
         n.f2.accept(this, argu);
+        // pass the class field to varDeclaration, and in varDeclaration we should add var to the class
         n.f3.accept(this, nClass);
         n.f4.accept(this, nClass);
         n.f5.accept(this, argu);
@@ -179,6 +180,7 @@ public class SymbolTableVisitor extends GJDepthFirst<Object, Object> {
 
         n.f2.accept(this, argu);
 
+        // we just assume the parentClass exist, if not, we will check in typecheck
         nClass.setParentClass(n.f3.f0.tokenImage);
         n.f3.accept(this, argu);
 
@@ -201,7 +203,7 @@ public class SymbolTableVisitor extends GJDepthFirst<Object, Object> {
 
         if(argu instanceof MClass) {
             MVar nVar = new MVar(n.f1.f0.tokenImage,type,null,((MClass) argu).getName(),n.f1.f0.beginLine,n.f1.f0.beginColumn);
-            //-----
+            //-----in this part setHasInit
             if (type.equals("int") || type.equals("boolean")) {
                 nVar.setHasInit(1);
                 nVar.setIntValue(0);

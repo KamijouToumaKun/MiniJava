@@ -172,6 +172,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         n.f2.accept(this, nClass);
         n.f3.accept(this, nClass);
 
+        // check whether the class exist, and check whether there is 循环继承
         String parent = nClass.getParentClass();
         if(MClassList.instance.findClass(parent) == null) {
             ErrorPrinter.instance.printError(n.f3.f0.beginLine, n.f3.f0.beginColumn,
@@ -225,8 +226,8 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
 
     /**
      * check whether a method has been defined
-     * @param name
-     * @param nClass
+     * @param name: method name
+     * @param nClass: in which class
      * @param line
      * @param column
      */
@@ -277,7 +278,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
     public boolean checkExpType(MType exp,String type,String printContent) {
         if(exp == null || type == null) {
             //ErrorPrinter.instance.printError(exp.getLine(), exp.getColumn(),
-                "find null type in expression type check");
+                // "find null type in expression type check");
             return false;
         }
 
@@ -294,11 +295,13 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         }
         String parent = nClass.getParentClass();
 
-        /*if(type.equals("int") || type.equals("int[]") || type.equals("boolean")) {
+        /*
+        if(type.equals("int") || type.equals("int[]") || type.equals("boolean")) {
             ErrorPrinter.instance.printError(exp.getLine(), exp.getColumn(),
             " try to give a non-base type value to a base-type var");
             return false;
-        }*/
+        }
+        */
         //check if type is the parent class of the expression
         boolean findParentClass = false;
         HashSet<String> parentSet = new HashSet<>();
@@ -376,6 +379,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         n.f9.accept(this, nMethod);
 
         MType type = (MType)n.f10.accept(this, nMethod);
+
         checkExpNotInit(type, "some var in return expression has not been initialized");
         checkExpType(type,nMethod.getReturnType()," no match for the return type");
         n.f11.accept(this, nMethod);
@@ -487,6 +491,11 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         return _ret;
     }
 
+    /**
+    * @param nType: the type is from identifier, the name is var name
+    * @param argu: which field the var is from
+    * @return the type of the var
+    */
     public String changeIdentifier(MType nType,Object argu) {
         String name = nType.getName();
         MVar nVar = null;
@@ -500,18 +509,29 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         return nVar.getType();
     }
 
+    /**
+    * for every expression, we need to chech whether it has been initialized.
+    * @param exp: expression
+    * @param printContent: if the analysis goes wrong, what content we should print
+    * @return if expression has not been initialized, return true
+    */
     public boolean checkExpNotInit(MType exp, String printContent) {
         if (exp == null) {
             // ErrorPrinter.instance.printError(exp.getLine(), exp.getColumn(), 
                 // "calculation error and exp is of null type");
             return true;
         } else if (exp.getHasInit() == -1) {
-            ErrorPrinter.instance.printError(exp.getLine(), exp.getColumn(), printContent);
+            ErrorPrinter.instance.printError(exp.getLine(), exp.getColumn(), printContent, 1);
             return true;
         } else {
             return false;
         }
     }
+
+    /**
+    * @param exp: expression
+    * @return if the expression has a definite value(either integer or boolean), return true.
+    */
     public boolean checkExpDefinite(MType exp) {
         if (exp == null) {
             return false;
@@ -521,6 +541,11 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
             return false;
         }
     }
+
+    /**
+    * @param exp:expression in the method should be an integer array indentifier.
+    * @return if the identifier is an integer array and the array has a definite length, return true.
+    */
     public boolean checkExpDefiniteLength(MType exp) {
         if (exp == null || !exp.getName().equals("int[]")) {
             return false;
@@ -530,12 +555,18 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
             return false;
         }
     }
+
+    /** 
+    * to check whether a visit to an array is valid
+    * @param exp1: exp1 should be an integer array indentifier.
+    * @param exp2: exp2 shoulb be an integer number
+    */
     public void checkOutOfRange(MType exp1, MType exp2) {
         if (checkExpDefiniteLength(exp1) && checkExpDefinite(exp2) &&
             exp2.getName().equals("int") &&
             exp1.getLength() <= exp2.getIntValue()) {
             ErrorPrinter.instance.printError(exp2.getLine(), exp2.getColumn(), 
-                "index out of range");
+                "index out of range", 1);
         }
     }
 
@@ -551,13 +582,15 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         MType nType = (MType)n.f0.accept(this, argu);
         varCheck(nType.getName(), argu, nType.getLine(), nType.getColumn());
         
-        //get mVar before nType is renamed to type before name
+        // get mVar before nType is renamed to type before name
+        // we should use this var to setHasInit and set value
         MVar mVar = ((MMethod)argu).getVar(nType.getName());
         
         nType.setName(changeIdentifier(nType, argu));
     
         n.f1.accept(this, argu);
 
+        // check exp not init
         MType exp = (MType)n.f2.accept(this, argu);
         if (!checkExpNotInit(exp, "some var in assignment expression has not been initialized")) {
             if (argu instanceof MMethod && mVar != null) {
@@ -597,14 +630,15 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         varCheck(arrVar.getName(),argu,arrVar.getLine(),arrVar.getColumn());
         arrVar.setName(changeIdentifier(arrVar, argu));
 
-        // checkExpType(arrVar, "int[]", "type-mismatch for int[]");
         checkExpType(arrVar, "int[]", "left part of '[' is not int[]");
 
         n.f1.accept(this, argu);
 
         MType indexExp = (MType)n.f2.accept(this, argu);
         checkExpNotInit(indexExp, "some var in index expression has not been initialized");
+
         checkOutOfRange(arrVar, indexExp);
+        
         checkExpType(indexExp, "int", "type-mismatch for index of an array, should be int");
 
         n.f3.accept(this, argu);
@@ -616,7 +650,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
                 // an arrVar's hasInit must have been 0
             }
         }
-        // checkExpType(exp, "int", "type-mismatch for int[]");
+
         checkExpType(exp, "int", "type dis-match for expression");
 
         n.f6.accept(this, argu);
@@ -639,6 +673,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
 
         MType exp = (MType)n.f2.accept(this, argu);
         checkExpNotInit(exp, "some var in if expression has not been initialized");
+        
         checkExpType(exp, "boolean", "not boolean type used for condition");
 
         n.f3.accept(this, argu);
