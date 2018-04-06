@@ -28,7 +28,7 @@ public class Main {
 			// InputStream is = new FileInputStream("test/BinaryTree-error.java");
             // InputStream is = new FileInputStream("test/BinaryTree.java");
             // InputStream is = new FileInputStream("test/BubbleSort-error.java");
-            // InputStream is = new FileInputStream("test/BubbleSort.java");
+            InputStream is = new FileInputStream("test/BubbleSort.java");
             // InputStream is = new FileInputStream("test/Factorial-error.java");
             // InputStream is = new FileInputStream("test/Factorial.java");
             // InputStream is = new FileInputStream("test/LinearSearch-error.java");
@@ -44,7 +44,7 @@ public class Main {
             // InputStream is = new FileInputStream("test/IndexRange-error.java");
             // InputStream is = new FileInputStream("test/IndexRange.java");
             // InputStream is = new FileInputStream("test/Initialization-error.java");
-            InputStream is = new FileInputStream("test/Initialization.java");
+            // InputStream is = new FileInputStream("test/Initialization.java");
 			
             Node root = new MiniJavaParser(is).Goal();
 			root.accept(new SymbolTableVisitor(),MClassList.instance);
