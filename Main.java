@@ -27,9 +27,6 @@ public class Main {
 			// InputStream is = new FileInputStream("test/MoreThan4.java");
 			// InputStream is = new FileInputStream("test/QuickSort.java");
 			InputStream is = new FileInputStream("test/TreeVisitor.java");
-			// InputStream is = new FileInputStream("test/IndexRange.java");
-			// InputStream is = new FileInputStream("test/Initialization.java");
-
 			// InputStream is = new FileInputStream("test/ClassAsParam.java");
 			// InputStream is = new FileInputStream("test/TooManyParams.java");
 			
