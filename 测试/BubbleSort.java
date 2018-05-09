@@ -24,7 +24,6 @@ class BBS{
 	aux01 = this.Print();
 	return 0 ;
     }
-
  
     // Sort array of integers using Bublesort method
     public int Sort(){
@@ -70,7 +69,7 @@ class BBS{
 	}
 	return 0 ;
     }
-    
+
     // Initialize array of integers
     public int Init(int sz){
 	size = sz ;
@@ -89,5 +88,4 @@ class BBS{
 	
 	return 0 ;	
     }
-
 }
