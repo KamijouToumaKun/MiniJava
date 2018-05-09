@@ -5,6 +5,7 @@ public class MType {
     protected int line = 0;
     protected int column = 0;
 
+    // ---for typecheck, bonus part begins---
     protected int hasInitLength = 0;
     // 0: has initialized, but not sure of value
     // -1: has not initialized
@@ -47,6 +48,48 @@ public class MType {
     public boolean getBooleanValue() {
         return booleanValue;
     }
+    // ---bonus part ends---
+
+    // ---Piglet part
+    protected String pigletName = null; // null: hasn't been initialized
+    public void setPigletName(String pigletName) {
+        this.pigletName = pigletName;
+    }
+    public String getPigletName() {
+        return pigletName;
+    }
+    protected int pigletStatus = -1;
+    // -1: not completeClass()
+    // 0: already completeClass() but not allocTemp()
+    // 1: already allocTemp()
+    public void setPigletStatus(int pigletStatus) {
+        this.pigletStatus = pigletStatus;
+    }
+    public int getPigletStatus() {
+        return pigletStatus;
+    }
+
+    protected int tempNum = 0;
+    protected int offset = -1; // -1: hasn't been initialized
+    public void setOffset(int offset) {
+        this.offset = offset;
+    }
+    public int getOffset() {
+        return offset;
+    }
+
+    public void setTempNum(int tempNum) {
+        this.tempNum = tempNum;
+    }
+
+    public int getTempNum() {
+        return tempNum;
+    }
+
+    public boolean judgeTemp() {
+        return tempNum > 0;
+    }
+
 
     public MType() {
         
@@ -56,13 +99,22 @@ public class MType {
     public boolean equals(Object obj) {  
         if (!(obj instanceof MType)) {
             return false;
+        } else if (!name.equals(((MType)obj).name)) {
+            return false;
         } else {
-            return name.equals(((MType)obj).name);  
+            if (pigletName==null && ((MType)obj).pigletName==null) {
+                return true;
+            } else if (pigletName!=null && ((MType)obj).pigletName!=null) {
+                return pigletName.equals(((MType)obj).name);
+            } else {
+                return false;
+            }
         }
     }  
     @Override
     public int hashCode() {  
         return name.hashCode();  
+        // if conflict, check name & pigletName.
     }  
 
     public MType(String name, int line, int column) {

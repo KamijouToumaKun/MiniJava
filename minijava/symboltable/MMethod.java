@@ -8,15 +8,15 @@ import java.util.HashSet;
 public class MMethod extends MType {
     protected String returnType;
     protected String className;
-    protected ArrayList<MVar> mParamArrayList = new ArrayList<MVar>();
+    protected ArrayList<MVar> mParamList = new ArrayList<MVar>();
     protected HashSet<MVar> mVarSet = new HashSet<MVar>();
 
     public String getClassName() {
         return className;
     }
 
-    public ArrayList<MVar> getmParamArrayList() {
-        return mParamArrayList;
+    public ArrayList<MVar> getmParamList() {
+        return mParamList;
     }
 
     public String getReturnType() {
@@ -30,10 +30,10 @@ public class MMethod extends MType {
     }
 
     public boolean judgeEqualParamList(ArrayList<MVar> paramList) {
-        if(mParamArrayList.size() != paramList.size()) return false;
+        if(mParamList.size() != paramList.size()) return false;
         int s = paramList.size();
         for (int i=0; i < s; i++) {
-            if(!mParamArrayList.get(i).type.equals(paramList.get(i).type)) {
+            if(!mParamList.get(i).type.equals(paramList.get(i).type)) {
                 return false;
             }
         }
@@ -41,13 +41,13 @@ public class MMethod extends MType {
     }
 
     public boolean judgeParamList(ArrayList<MVar> paramList) {
-        if (mParamArrayList.size() != paramList.size()) {
+        if (mParamList.size() != paramList.size()) {
             return false;
         }
         // judge paramlist one by one
         int s = paramList.size();
         for (int i=0; i < s; i++) {
-            if (!MClassList.instance.judgeParentClass(paramList.get(i).type, mParamArrayList.get(i).type)) {
+            if (!MClassList.instance.judgeParentClass(paramList.get(i).type, mParamList.get(i).type)) {
                 return false;
             }
         }
@@ -55,7 +55,7 @@ public class MMethod extends MType {
     }
 
     public boolean repeatedParam(String paramName) {
-        for (MVar knownParam:mParamArrayList) {
+        for (MVar knownParam:mParamList) {
             if (paramName.equals(knownParam.getName())) {
                 return true;
             }
@@ -68,7 +68,7 @@ public class MMethod extends MType {
             ErrorPrinter.instance.printError(nParam.getLine(),nParam.getColumn(),"Param " + nParam.getName() + " repeated declared");
             return false;
         } else {
-            mParamArrayList.add(nParam);
+            mParamList.add(nParam);
             return true;
         }
     }
@@ -90,7 +90,7 @@ public class MMethod extends MType {
                 return knownVar;
             }
         }
-        for (MVar knownParam:mParamArrayList) {
+        for (MVar knownParam:mParamList) {
             if (name.equals(knownParam.getName())) {
                 return knownParam;
             }
@@ -101,5 +101,22 @@ public class MMethod extends MType {
         } else { //that will not happen
             return null;
         }
+    }
+
+    public String getPigletDefineName() {
+        // have got pigletName in completeClass()
+        String pigletName = getPigletName() + " [ " + (mParamList.size()+1) + " ] ";
+        return pigletName;
+    }
+
+    public int allocTemp(int currentTemp) {
+        int num = 0;
+        for(MVar mVar : mParamList) {
+            mVar.setTempNum(++num);
+        }
+        for(MVar mVar : mVarSet) {
+            mVar.setTempNum(currentTemp++);
+        }
+        return currentTemp;
     }
 }
