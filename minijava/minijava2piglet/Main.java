@@ -21,15 +21,12 @@ public class Main {
 		try {
 			// InputStream is = new FileInputStream("test/BinaryTree.java");
 			// InputStream is = new FileInputStream("test/BubbleSort.java");
-			InputStream is = new FileInputStream("test/Factorial.java");
+			// InputStream is = new FileInputStream("test/Factorial.java");
 			// InputStream is = new FileInputStream("test/LinearSearch.java");
 			// InputStream is = new FileInputStream("test/LinkedList.java");
 			// InputStream is = new FileInputStream("test/MoreThan4.java");
 			// InputStream is = new FileInputStream("test/QuickSort.java");
-			// InputStream is = new FileInputStream("test/TreeVisitor.java");
-			// InputStream is = new FileInputStream("test/IndexRange.java");
-			// InputStream is = new FileInputStream("test/Initialization.java");
-
+			InputStream is = new FileInputStream("test/TreeVisitor.java");
 			// InputStream is = new FileInputStream("test/ClassAsParam.java");
 			// InputStream is = new FileInputStream("test/TooManyParams.java");
 			
