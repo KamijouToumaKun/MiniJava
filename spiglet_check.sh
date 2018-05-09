@@ -1,0 +1,1 @@
+java -jar spp.jar < mine.spg
