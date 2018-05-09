@@ -364,11 +364,18 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         if(argu instanceof MClass) {
             nMethod = ((MClass) argu).getMethod(((MType)n.f2.accept(this, argu)).getName());
             MClass nClass = MClassList.instance.findClass(nMethod.getClassName());
-            nClass.repeatedMethod(nMethod.getName(),nMethod.getReturnType(),nMethod.getmParamArrayList());
+            nClass.repeatedMethod(nMethod.getName(),nMethod.getReturnType(),nMethod.getmParamList());
+            // ---check parameter number
+            if (nMethod.getmParamList().size() > 19) {
+                ErrorPrinter.instance.printError(nMethod.getLine(), nMethod.getColumn(),
+                    "the method has more than 19 parameters");
+            }
+            // ---
         }
-        else {//will that happen?
-            System.out.println("a method not in class");
-        }
+        // else {
+            // will that happen?
+            // System.out.println("a method not in class");
+        // }
 
         n.f3.accept(this, nMethod);
         n.f4.accept(this, nMethod);
@@ -966,12 +973,12 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         else nCallList = new MCallList(nMethod,((MCallList)argu).getContextMethod());
 
         n.f4.accept(this, nCallList);
-        for (MVar mVar:nCallList.getmVarArrayList()) {
+        for (MVar mVar:nCallList.getmVarList()) {
             if (checkExpNotInit(mVar, "param has not been initialized")) {
                 _ret.setHasInit(-1);
             }
         }
-        if(!nMethod.judgeParamList(nCallList.getmVarArrayList())) {
+        if(!nMethod.judgeParamList(nCallList.getmVarList())) {
             ErrorPrinter.instance.printError(methodCalled.getLine(), methodCalled.getColumn(),
                 "function param no match");
         }
@@ -990,7 +997,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         if(argu instanceof MCallList) {
             MVar mTempVar = new MVar("", nType.getName(), null, null, nType.getLine(), nType.getColumn());
             mTempVar.setHasInit(nType.getHasInit());
-            ((MCallList) argu).getmVarArrayList().add(mTempVar);
+            ((MCallList) argu).getmVarList().add(mTempVar);
         }
         n.f1.accept(this, argu);
         return _ret;
@@ -1007,7 +1014,7 @@ public class TypeCheckVisitor extends GJDepthFirst<Object, Object> {
         if(argu instanceof MCallList) {
             MVar mTempVar = new MVar("", nType.getName(), null, null, nType.getLine(), nType.getColumn());
             mTempVar.setHasInit(nType.getHasInit());
-            ((MCallList) argu).getmVarArrayList().add(mTempVar);
+            ((MCallList) argu).getmVarList().add(mTempVar);
         }
         return _ret;
     }
