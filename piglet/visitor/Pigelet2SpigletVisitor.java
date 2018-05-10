@@ -39,7 +39,7 @@ public class Pigelet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
     }
 
     public MSpiglet visit(NodeListOptional n) {
-        if ( n.present() ) {
+        if (n.present()) {
             MSpiglet _ret = new MSpiglet("");
             int _count=0;
             for (Enumeration<Node> e = n.elements(); e.hasMoreElements(); ) {
@@ -59,8 +59,8 @@ public class Pigelet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
     }
 
     public MSpiglet visit(NodeOptional n) {
-        if ( n.present() ) {
-            if(n.node instanceof Label) {
+        if (n.present()) {
+            if (n.node instanceof Label) {
                 return new MSpiglet(((Label) n.node).f0.tokenImage);
                 //TODO: for label like L2, you may not put a new line here.
             }
@@ -99,10 +99,10 @@ public class Pigelet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
     public MSpiglet visit(Goal n) {
         MSpiglet _ret = new MSpiglet("MAIN");
         n.f0.accept(this);
-        _ret.appendCode( n.f1.accept(this));
+        _ret.appendCode(n.f1.accept(this));
         n.f2.accept(this);
         _ret.appendCode(new MSpiglet("END"));
-        _ret.appendCode( n.f3.accept(this));
+        _ret.appendCode(n.f3.accept(this));
         n.f4.accept(this);
         return _ret;
     }
@@ -128,7 +128,9 @@ public class Pigelet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         _ret.appendCode(new MSpiglet("BEGIN"));
         n.f0.accept(this);
         n.f1.accept(this);
-        n.f2.accept(this);
+        MSpiglet integerLiteral = n.f2.accept(this);
+        recycledTempNum.add(integerLiteral.getTemp()); //recycle temp
+
         n.f3.accept(this);
         MSpiglet exp = n.f4.accept(this);
         if (!exp.isSimpleExp()) {
@@ -186,7 +188,10 @@ public class Pigelet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         MSpiglet _ret = new MSpiglet("");
         n.f0.accept(this);
         MSpiglet exp = n.f1.accept(this);
-        n.f2.accept(this);
+        MSpiglet label = n.f2.accept(this);
+        // since Label() is like "L2", not a method
+        recycledTempNum.add(label.getTemp()); //recycle temp
+        
         _ret.appendCode(exp);
         _ret.appendCode(new MSpiglet("CJUMP " + exp.getTemp() + " " + n.f2.f0.tokenImage));
         return _ret;
@@ -199,7 +204,9 @@ public class Pigelet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
     public MSpiglet visit(JumpStmt n) {
         MSpiglet _ret = new MSpiglet("JUMP " + n.f1.f0.tokenImage);
         n.f0.accept(this);
-        n.f1.accept(this);
+        MSpiglet label = n.f1.accept(this);
+        // since Label() is like "L2", not a method
+        recycledTempNum.add(label.getTemp()); //recycle temp
         return _ret;
     }
 
@@ -213,7 +220,9 @@ public class Pigelet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         MSpiglet _ret = new MSpiglet("");
         n.f0.accept(this);
         MSpiglet exp1 = n.f1.accept(this);
-        n.f2.accept(this);
+        MSpiglet integerLiteral = n.f2.accept(this);
+        recycledTempNum.add(integerLiteral.getTemp()); //recycle temp
+
         MSpiglet exp2 = n.f3.accept(this);
         _ret.appendCode(exp1);
         _ret.appendCode(exp2);
@@ -232,7 +241,9 @@ public class Pigelet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         n.f0.accept(this);
         MSpiglet exp1 = n.f1.accept(this);
         MSpiglet exp2 = n.f2.accept(this);
-        n.f3.accept(this);
+        MSpiglet integerLiteral = n.f3.accept(this);
+        recycledTempNum.add(integerLiteral.getTemp()); //recycle temp
+
         _ret.appendCode(exp1);
         _ret.appendCode(exp2);
         _ret.appendCode(new MSpiglet("HLOAD " + exp1.getTemp() + " " + exp2.getTemp() + " " + n.f3.f0.tokenImage));
@@ -434,7 +445,8 @@ public class Pigelet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         _ret.setSimpleExp(name);
         _ret.setExp(name);
         n.f0.accept(this);
-        n.f1.accept(this);
+        MSpiglet integerLiteral = n.f1.accept(this);
+        recycledTempNum.add(integerLiteral.getTemp()); //recycle temp
         return _ret;
     }
 
@@ -447,6 +459,7 @@ public class Pigelet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         _ret.setTemp(name);
         _ret.setSimpleExp(n.f0.tokenImage);
         _ret.setExp(n.f0.tokenImage);
+        // most of the time, its TEMPNUM can be recycled later.
         n.f0.accept(this);
         return _ret;
     }
@@ -460,6 +473,8 @@ public class Pigelet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         _ret.setTemp(name);
         _ret.setSimpleExp(n.f0.tokenImage);
         _ret.setExp(n.f0.tokenImage);
+        // Label() can be like "L2", or a method
+        // if not a method, its TEMPNUM can be recycled later.
         n.f0.accept(this);
         return _ret;
     }
