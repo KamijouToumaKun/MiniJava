@@ -5,7 +5,7 @@ import piglet.PigletParser;
 import piglet.TokenMgrError;
 
 import piglet.visitor.GJDepthFirst;
-import piglet.visitor.Pigelet2SpigletVisitor;
+import piglet.visitor.Piglet2SpigletVisitor;
 import piglet.visitor.PigletTempNumVisitor;
 
 import java.io.*;
@@ -49,7 +49,7 @@ public class Main {
         }
         PigletTempNumVisitor v = new PigletTempNumVisitor();
         root.accept(v);
-        Pigelet2SpigletVisitor t = new Pigelet2SpigletVisitor(v.getTempNum());
+        Piglet2SpigletVisitor t = new Piglet2SpigletVisitor(v.getTempNum());
         return root.accept(t).getCode().toString();
     }
 }
