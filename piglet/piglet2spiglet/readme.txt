@@ -12,23 +12,22 @@
 如果所有地方都写成TEMP，未免太过冗余。
 所以遇到任何Exp，除了把它保存到一个新的临时TEMP里面，也保存一份它的Exp版本。
 如果这个Exp还属于SimpleExp，还保存一份它的SimpleExp版本。
-如果在需要用到这个代码段的时候，可以直接用Exp或SimpleExp的版本，
+1）如果在需要用到这个代码段的时候，可以直接用Exp或SimpleExp的版本，
 那就直接用，不需要_ret.appendCode("MOVE TEMPNUM Exp")了。
 同时把这个TEMPNUM释放、回收重用。
+2）如果在需要用到这个代码段的时候，发现它就是类似L2的Label而不是函数名label、
+或者它是字面值：那么更是可以直接回收它的TEMPNUM了。
 
-当然，这需要exp中不涉及到其他的TEMP
+当然，当exp中涉及到其他的TEMP时，要小心代码添加的顺序。
 例如piglet里可以写：Operator Exp1 Exp2
 在spiglet里只能写成：Operator TEMP SimpleExp
-那么先对TEMP进行展开，要先_ret.appendCode("MOVE TEMPNUM1 Exp1")
-再记录下TEMPNUM1。
-于是代码变成了Operator TEMPNUM1 SimpleExp。
-就算发现Exp是一个SimpleExp，不需要再用一个TEMPNUM2来记录它
-Exp里除了保存Operator TEMPNUM1 SimpleExp
-也要跟_ret一样先 += "MOVE TEMPNUM1 Exp1"
-否则Exp中的TEMPNUM1尚未被赋值。
-所以，在exp和_ret中都要保存一份"MOVE TEMPNUM1 Exp1"。
-这会造成存储的冗余，而且会改的很乱、代码的可读性变差了。于是作罢。
 
-其实，还可以用两个泛型参数的Visitor。
+exp2.getCode == "MOVE TEMPNUM2 Exp1 \n MOVE TEMPNUM3 Exp2 \n OP TEMPNUM2 TEMPNUM3"
+于是exp2.getExp() == "MOVE TEMPNUM2 Exp1 \n OP TEMPNUM2 Exp2";
+生成的代码顺序不可以是"MOVE TEMPNUM1 MOVE TEMPNUM2 Exp1 \n OP TEMPNUM2 Exp2"
+需要是"MOVE TEMPNUM2 Exp1 \n MOVE TEMPNUM1 OP TEMPNUM2 Exp2"
+（其实，这样只能节省一两个TEMPNUM。）
+
+其实，最好的方法，是用两个泛型参数的Visitor。
 第二个参数用于指示，返回值必须是Temp，还是可以是SimpleExp或者Exp。
-这样就不需要先分配TEMP、再回收不必要的TEMP这样多此一举了。
+这样就不需要先分配TEMP、再回收不必要的TEMP，这样多此一举了。
