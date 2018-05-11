@@ -8,7 +8,7 @@ public class MSpiglet {
     private int opType;
     private ArrayList<String> tempList = new ArrayList<String>();
     private String simpleExp = null;
-    private String expStmt = null;
+    private MSpiglet expStmt = null;
     private String exp = null;
 
     public StringBuilder getCode() {
@@ -47,7 +47,7 @@ public class MSpiglet {
     }
 
     public void setSimpleExp(String simpleExp) {
-        this.simpleExp = simpleExp;
+        this.simpleExp = simpleExp;        
     }
     public String getSimpleExp() {
         return simpleExp;
@@ -56,13 +56,13 @@ public class MSpiglet {
         return simpleExp != null;
     }
 
-    public void setExpStmt(String expStmt) {
-        this.expStmt = expStmt;
+    public void setExpStmt(MSpiglet mSpiglet) {
+        this.expStmt = mSpiglet;
     }
     public void setExp(String exp) {
         this.exp = exp;
     }
-    public String getExpStmt() {
+    public MSpiglet getExpStmt() {
         return expStmt;
     }
     public String getExp() {
