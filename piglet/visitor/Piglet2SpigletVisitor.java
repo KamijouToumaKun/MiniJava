@@ -136,7 +136,7 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         if (!exp.isSimpleExp()) {
             _ret.appendCode(exp);
             _ret.appendCode(new MSpiglet("RETURN " + exp.getTemp()));
-        } else {
+        } else { //this will not happen
             _ret.appendCode(new MSpiglet("RETURN " + exp.getSimpleExp()));
             if (!exp.isTemp()) {
                 recycledTempNum.add(exp.getTemp()); //recycle temp
@@ -259,21 +259,17 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         MSpiglet exp1 = n.f1.accept(this);
         MSpiglet exp2 = n.f2.accept(this);
         _ret.appendCode(exp1);
-        if (!exp2.isExp()) {
-            _ret.appendCode(exp2);
-            _ret.appendCode(new MSpiglet("MOVE " + exp1.getTemp() + " " + exp2.getTemp()));
-        } else {
-            _ret.appendCode(new MSpiglet(exp2.getExpStmt()
-                + "MOVE " + exp1.getTemp() + " " + exp2.getExp()));
-            /*
-            exp2.getCode == "MOVE TEMPNUM2 Exp1 \n MOVE TEMPNUM3 Exp2 \n OP TEMPNUM2 TEMPNUM3"
-            exp2.getExp() == "MOVE TEMPNUM2 Exp1 \n OP TEMPNUM2 Exp2";
-            now if we appendCode, it = "MOVE TEMPNUM1 MOVE TEMPNUM2 Exp1 \n OP TEMPNUM2 Exp2"
-            it should be: "MOVE TEMPNUM2 Exp1 \n MOVE TEMPNUM1 OP TEMPNUM2 Exp2"
-            */
-            if (!exp2.isTemp()) {
-                recycledTempNum.add(exp2.getTemp()); //recycle temp
-            }
+        // exp2 must be Exp
+        _ret.appendCode(exp2.getExpStmt());
+        _ret.appendCode(new MSpiglet("MOVE " + exp1.getTemp() + " " + exp2.getExp()));
+        /*
+        exp2.getCode == "MOVE TEMPNUM2 Exp1 \n MOVE TEMPNUM3 Exp2 \n OP TEMPNUM2 TEMPNUM3"
+        exp2.getExp() == "MOVE TEMPNUM2 Exp1 \n OP TEMPNUM2 Exp2";
+        now if we appendCode, it = "MOVE TEMPNUM1 MOVE TEMPNUM2 Exp1 \n OP TEMPNUM2 Exp2"
+        it should be: "MOVE TEMPNUM2 Exp1 \n MOVE TEMPNUM1 OP TEMPNUM2 Exp2"
+        */
+        if (!exp2.isTemp()) {
+            recycledTempNum.add(exp2.getTemp()); //recycle temp
         }
         return _ret;
     }
@@ -322,14 +318,27 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
     public MSpiglet visit(StmtExp n) {
         n.f0.accept(this);
         MSpiglet _ret = new MSpiglet("");
-        _ret.appendCode(n.f1.accept(this));        
+        MSpiglet stmtList = n.f1.accept(this);
+        _ret.appendCode(stmtList);        
         n.f2.accept(this);
         MSpiglet exp = n.f3.accept(this);
         n.f4.accept(this);
-        _ret.appendCode(exp); //TODO: has been ensured to be tempNum?
-        _ret.setTemp(exp.getTemp());
-        // use Temp, not exp.
-        // or you should let getExp() += n.f1.accept(this) first.
+
+        _ret.appendCode(exp);
+        _ret.setTemp(exp.getTemp()); //no need to move again
+        if (!exp.isSimpleExp()) {
+            _ret.setExpStmt(new MSpiglet(""));
+            _ret.getExpStmt().appendCode(stmtList);
+            _ret.getExpStmt().appendCode(exp);
+            _ret.setExp(exp.getTemp()); //not "RETURN " + exp.getTemp()
+        } else {
+            _ret.setExpStmt(new MSpiglet(""));
+            _ret.getExpStmt().appendCode(stmtList);
+            _ret.setExp(exp.getSimpleExp());
+            if (!exp.isTemp()) {
+                recycledTempNum.add(exp.getTemp()); //recycle temp
+            }
+        }
         return _ret;
     }
 
@@ -367,12 +376,12 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         
         _ret.appendCode(new MSpiglet("MOVE " + name + " " + callCode));
         _ret.setTemp(name);
+        _ret.setExpStmt(new MSpiglet(""));
         if (!exp1.isSimpleExp()) {
-            // use Temp, not exp
-        } else {
-            _ret.setExpStmt(exp2.getCode().toString() + "\n");
-            _ret.setExp(callCode);
+            _ret.getExpStmt().appendCode(exp1);
         }
+        _ret.getExpStmt().appendCode(exp2);
+        _ret.setExp(callCode);
         return _ret;
     }
 
@@ -388,12 +397,13 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
             String name = getNextTemp();
             _ret.appendCode(new MSpiglet("MOVE " + name + " HALLOCATE " + exp.getTemp()));
             _ret.setTemp(name);
-            // use Temp, not exp
+            _ret.setExpStmt(exp.getExpStmt());
+            _ret.setExp("HALLOCATE " + exp.getTemp());
         } else {
             String name = getNextTemp();
             _ret.appendCode(new MSpiglet("MOVE " + name + " HALLOCATE " + exp.getSimpleExp()));
             _ret.setTemp(name);
-            _ret.setExpStmt("");
+            _ret.setExpStmt(new MSpiglet(""));
             _ret.setExp("HALLOCATE " + exp.getSimpleExp());
             if (!exp.isTemp()) {
                 recycledTempNum.add(exp.getTemp()); //recycle temp
@@ -418,11 +428,16 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
             String name = getNextTemp();
             _ret.appendCode(new MSpiglet("MOVE " + name + " " + op.getOp() + " " + exp1.getTemp() + " " + exp2.getTemp()));
             _ret.setTemp(name);
+            _ret.setExpStmt(new MSpiglet(""));
+            _ret.getExpStmt().appendCode(exp1);
+            _ret.getExpStmt().appendCode(exp2);
+            _ret.setExp(op.getOp() + " " + exp1.getTemp() + " " + exp2.getTemp());
         } else {
             String name = getNextTemp();
             _ret.appendCode(new MSpiglet("MOVE " + name + " " + op.getOp() + " " + exp1.getTemp() + " " + exp2.getSimpleExp()));
             _ret.setTemp(name);
-            _ret.setExpStmt(exp1.getCode() + "\n");
+            _ret.setExpStmt(new MSpiglet(""));
+            _ret.getExpStmt().appendCode(exp1);
             _ret.setExp(op.getOp() + " " + exp1.getTemp() + " " + exp2.getSimpleExp());
             if (!exp2.isTemp()) {
                 recycledTempNum.add(exp2.getTemp()); //recycle temp
@@ -453,7 +468,7 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         String name = "TEMP " + n.f1.f0.tokenImage;
         _ret.setTemp(name);
         _ret.setSimpleExp(name);
-        _ret.setExpStmt("");
+        _ret.setExpStmt(new MSpiglet(""));
         _ret.setExp(name);
         n.f0.accept(this);
         MSpiglet integerLiteral = n.f1.accept(this);
@@ -469,7 +484,7 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         MSpiglet _ret = new MSpiglet("MOVE " + name + " " + n.f0.tokenImage);
         _ret.setTemp(name);
         _ret.setSimpleExp(n.f0.tokenImage);
-        _ret.setExpStmt("");
+        _ret.setExpStmt(new MSpiglet(""));
         _ret.setExp(n.f0.tokenImage);
         // most of the time, its TEMPNUM can be recycled later.
         n.f0.accept(this);
@@ -485,7 +500,7 @@ public class Piglet2SpigletVisitor extends GJNoArguDepthFirst<MSpiglet> {
         _ret.setTemp(name);
         // neither a label nor a method needs a TEMPNUM
         _ret.setSimpleExp(n.f0.tokenImage);
-        _ret.setExpStmt("");
+        _ret.setExpStmt(new MSpiglet(""));
         _ret.setExp(n.f0.tokenImage);
         n.f0.accept(this);
         return _ret;
