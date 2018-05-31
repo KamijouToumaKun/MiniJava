@@ -1,8 +1,5 @@
-第一遍用PigletTempNumVisitor扫描，这一边只为找到最大的一个TEMPNUM，
-以后要再用到新的临时TEMPNUM时，就从这里开始计数。
-当然，也可以简单的对代码段依次进行扫描，也能找到最大的一个TEMPNUM。
-
-第二遍用Pigelet2SpigletVisitor扫描。
+先用正则表达式扫描、找到最大的一个TEMPNUM，以后要再用到新的临时TEMPNUM时，就从这里开始计数。
+然后用Pigelet2SpigletVisitor扫描。
 因为splglet的语法很严格，在piglet里面可以用Exp的地方，在spiglet中大多数都只能用TEMP。
 所以遇到任何Exp，都先_ret.appendCode("MOVE TEMPNUM Exp")，
 把它保存到一个新的临时TEMP里面，并且记录下这个TEMPNUM；
