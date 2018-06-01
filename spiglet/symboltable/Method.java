@@ -2,14 +2,16 @@ package spiglet.symboltable;
 
 import java.util.HashMap;
 
+import spiglet.symboltable.Context;
+
 public class Method {
 	public String methodName;
 	public int paramNum, stackNum = 0, callParamNum = 0;
 
-	// t0-t9
-	public HashMap<String, String> regT = new HashMap<String, String>();
 	// s0-s7
 	public HashMap<String, String> regS = new HashMap<String, String>();
+	// t0-t9
+	public HashMap<String, String> regT = new HashMap<String, String>();
 	// SPILLEDARG *
 	public HashMap<String, String> regSpilled = new HashMap<String, String>();
 	// tempNo -> Interval
@@ -22,31 +24,30 @@ public class Method {
 		this.paramNum = paramNum;
 	}
 
-	public String getGlobalLabel(String labelName) {
-		return this.methodName + "_" + labelName;
+	public String getGlobalLabel(String localLabel) {
+		String methodAndLocalLabel = methodName + "_" + localLabel;
 		//like L2_QS_Sort
 		//in spiglet, labels can be local and they may be not like "L2"
+		Integer globalLabelNo;
+		if (Context.mGlobalLabel.containsKey(methodAndLocalLabel)) {
+			globalLabelNo = Context.mGlobalLabel.get(methodAndLocalLabel);
+		} else {
+			globalLabelNo = Context.globalLabelNo++;
+			Context.mGlobalLabel.put(methodAndLocalLabel, globalLabelNo);
+		}
+		return "L" + globalLabelNo;
 	}
 
 	// tempName->regName
 	// if spilled, load tempName in regName
 	public String temp2Reg(String regName, String tempName) {
-		if (this.regT.containsKey(tempName)) {
-			return this.regT.get(tempName);
-		} else if (this.regS.containsKey(tempName)) {
-			return this.regS.get(tempName);
+		if (regT.containsKey(tempName)) {
+			return regT.get(tempName);
+		} else if (regS.containsKey(tempName)) {
+			return regS.get(tempName);
 		} else {
-			/*
-			System.out.println("*****" + tempName);
-			for (String i : this.regT.keySet())
-				System.out.println("****" + i);
-			for (String i : this.regS.keySet())
-				System.out.println("***" + i);
-			for (String i : this.regSpilled.keySet())
-				System.out.println("**" + i);
-			*/
 			// spilled
-			Context.out.printf("\t\tALOAD %s %s\n", regName, this.regSpilled.get(tempName));
+			Context.out.printf("\tALOAD %s %s\n", regName, regSpilled.get(tempName));
 			return regName;
 		}
 	}
@@ -54,13 +55,13 @@ public class Method {
 	// MOVE tempName exp
 	// if spilled, store in regSpilled
 	public void moveToTemp(String tempName, String exp) {
-		if (this.regSpilled.containsKey(tempName)) {
-			Context.out.printf("\t\tMOVE v0 %s\n", exp);
-			Context.out.printf("\t\tASTORE %s v0\n", this.regSpilled.get(tempName));
+		if (regSpilled.containsKey(tempName)) {
+			Context.out.printf("\tMOVE v0 %s\n", exp);
+			Context.out.printf("\tASTORE %s v0\n", this.regSpilled.get(tempName));
 		} else {
 			tempName = temp2Reg("", tempName);
 			if (!tempName.equals(exp))
-				Context.out.printf("\t\tMOVE %s %s\n", tempName, exp);
+				Context.out.printf("\tMOVE %s %s\n", tempName, exp);
 		}
 	}
 
