@@ -119,7 +119,7 @@ public class Spiglet2KangaVisitor extends GJDepthFirst<String, Method> {
 		String _ret=null;
 
 		n.f0.accept(this, argu);
-		Context.out.println("\t\tNOOP");
+		Context.out.println("\tNOOP");
 		return _ret;//null
 	}
 
@@ -130,7 +130,7 @@ public class Spiglet2KangaVisitor extends GJDepthFirst<String, Method> {
 		String _ret=null;
 
 		n.f0.accept(this, argu);
-		Context.out.println("\t\tERROR");
+		Context.out.println("\tERROR");
 		return _ret;//null
 	}
 
@@ -144,7 +144,7 @@ public class Spiglet2KangaVisitor extends GJDepthFirst<String, Method> {
 
 		n.f0.accept(this, argu);
 
-		Context.out.printf("\t\tCJUMP %s %s\n", 
+		Context.out.printf("\tCJUMP %s %s\n", 
 			argu.temp2Reg("v0", n.f1.accept(this, argu)), 
 			argu.getGlobalLabel(n.f2.accept(this, argu)));
 		return _ret;
@@ -159,7 +159,8 @@ public class Spiglet2KangaVisitor extends GJDepthFirst<String, Method> {
 
 		n.f0.accept(this, argu);
 
-		Context.out.printf("\t\tJUMP %s\n", argu.getGlobalLabel(n.f1.accept(this, argu)));
+		String globalLabel = argu.getGlobalLabel(n.f1.accept(this, argu));
+		Context.out.printf("\tJUMP %s\n", globalLabel);
 		return _ret;//null
 	}
 
@@ -174,7 +175,7 @@ public class Spiglet2KangaVisitor extends GJDepthFirst<String, Method> {
 
 		n.f0.accept(this, argu);
 
-		Context.out.printf("\t\tHSTORE %s %s %s\n", 
+		Context.out.printf("\tHSTORE %s %s %s\n", 
 			argu.temp2Reg("v0", n.f1.accept(this, argu)), 
 			n.f2.accept(this, argu),
 			argu.temp2Reg("v1", n.f3.accept(this, argu)));
@@ -196,10 +197,10 @@ public class Spiglet2KangaVisitor extends GJDepthFirst<String, Method> {
 		String regFrom = argu.temp2Reg("v1", n.f2.accept(this, argu));
 		String offset = n.f3.accept(this, argu);
 		if (argu.regSpilled.containsKey(tempTo)) {
-			Context.out.printf("\t\tHLOAD v1 %s %s\n", regFrom, offset);
+			Context.out.printf("\tHLOAD v1 %s %s\n", regFrom, offset);
 			argu.moveToTemp(tempTo, "v1");
 		} else {
-			Context.out.printf("\t\tHLOAD %s %s %s\n", argu.temp2Reg("", tempTo), regFrom, offset);
+			Context.out.printf("\tHLOAD %s %s %s\n", argu.temp2Reg("", tempTo), regFrom, offset);
 		}
 		return _ret;//null
 	}
@@ -230,7 +231,7 @@ public class Spiglet2KangaVisitor extends GJDepthFirst<String, Method> {
 		n.f0.accept(this, argu);
 
 		String simpleExp = n.f1.accept(this, argu);
-		Context.out.printf("\t\tPRINT %s\n", simpleExp);
+		Context.out.printf("\tPRINT %s\n", simpleExp);
 		return _ret;//null
 	}
 
@@ -254,29 +255,30 @@ public class Spiglet2KangaVisitor extends GJDepthFirst<String, Method> {
 
 		n.f0.accept(this, argu);
 
-		int stackIdx = argu.paramNum > 4 ? argu.paramNum - 4 : 0;
+		final int stackNum = argu.paramNum - 4 > 0 ? argu.paramNum : 0;
 		// store callee-saved S
 		if (argu.regS.size() != 0) {
-			for (int idx = stackIdx; idx < stackIdx + argu.regS.size(); idx++) {
-				if (idx - stackIdx > 7) {
+			for (int idx = stackNum; idx < stackNum + argu.regS.size(); idx++) {
+				if (idx - stackNum > 7) {
 					break;
 				}
-				Context.out.println("\t\tASTORE SPILLEDARG " + idx + " s" + (idx - stackIdx));
+				Context.out.println("\tASTORE SPILLEDARG " + idx + " s" + (idx - stackNum));
 			}
 		}
-		// move params regA to TEMP
-		for (stackIdx = 0; stackIdx < argu.paramNum && stackIdx < 4; stackIdx++)
-			if (argu.mTemp.containsKey(stackIdx))
-				argu.moveToTemp("TEMP " + stackIdx, "a" + stackIdx);
-		// load params(>4)
-		for (; stackIdx < argu.paramNum; stackIdx++) {
-			String tempName = "TEMP " + stackIdx;
-			if (argu.mTemp.containsKey(stackIdx)) {
+		// for param 0~3: moveTo register A
+		int paramIdx;
+		for (paramIdx = 0; paramIdx < argu.paramNum && paramIdx < 4; paramIdx++)
+			if (argu.mTemp.containsKey(paramIdx))
+				argu.moveToTemp("TEMP " + paramIdx, "a" + paramIdx);
+		// for params 4~: load
+		for (; paramIdx < argu.paramNum; paramIdx++) {
+			String tempName = "TEMP " + paramIdx;
+			if (argu.mTemp.containsKey(paramIdx)) {
 				if (argu.regSpilled.containsKey(tempName)) {
-					Context.out.printf("\t\tALOAD v0 SPILLEDARG %d\n", stackIdx - 4);
+					Context.out.printf("\tALOAD v0 SPILLEDARG %d\n", paramIdx - 4);
 					argu.moveToTemp(tempName, "v0");
 				} else {
-					Context.out.printf("\t\tALOAD %s SPILLEDARG %d\n", argu.temp2Reg("", tempName), stackIdx - 4);
+					Context.out.printf("\tALOAD %s SPILLEDARG %d\n", argu.temp2Reg("", tempName), paramIdx - 4);
 				}
 			}
 		}
@@ -284,15 +286,14 @@ public class Spiglet2KangaVisitor extends GJDepthFirst<String, Method> {
 		n.f1.accept(this, argu);
 		n.f2.accept(this, argu);
 		// v0 stores returnValue
-		Context.out.println("\t\tMOVE v0 " + n.f3.accept(this, argu));
+		Context.out.println("\tMOVE v0 " + n.f3.accept(this, argu));
 
 		// restore callee-saved S
-		stackIdx = argu.paramNum > 4 ? argu.paramNum - 4 : 0;
 		if (argu.regS.size() != 0) {
-			for (int j = stackIdx; j < stackIdx + argu.regS.size(); j++) {
-				if (j - stackIdx > 7)
+			for (int idx = stackNum; idx < stackNum + argu.regS.size(); idx++) {
+				if (idx - stackNum > 7)
 					break;
-				Context.out.println("\t\tALOAD s" + (j - stackIdx) + " SPILLEDARG " + j);
+				Context.out.println("\tALOAD s" + (idx - stackNum) + " SPILLEDARG " + idx);
 			}
 		}
 
@@ -319,11 +320,11 @@ public class Spiglet2KangaVisitor extends GJDepthFirst<String, Method> {
 		int paramIdx;
 		// pass params
 		for (paramIdx = 0; paramIdx < nParam && paramIdx < 4; paramIdx++)
-			Context.out.printf("\t\tMOVE a%d %s\n", paramIdx, argu.temp2Reg("v0", vTemp.get(paramIdx).accept(this, argu)));
+			Context.out.printf("\tMOVE a%d %s\n", paramIdx, argu.temp2Reg("v0", vTemp.get(paramIdx).accept(this, argu)));
 		for (; paramIdx < nParam; paramIdx++)
-			Context.out.printf("\t\tPASSARG %d %s\n", paramIdx - 3, argu.temp2Reg("v0", vTemp.get(paramIdx).accept(this, argu)));
+			Context.out.printf("\tPASSARG %d %s\n", paramIdx - 3, argu.temp2Reg("v0", vTemp.get(paramIdx).accept(this, argu)));
 		// call
-		Context.out.printf("\t\tCALL %s\n", n.f1.accept(this, argu));
+		Context.out.printf("\tCALL %s\n", n.f1.accept(this, argu));
 
 		n.f2.accept(this, argu);
 		n.f4.accept(this, argu);
