@@ -2,8 +2,6 @@ package spiglet.symboltable;
 
 import java.util.HashMap;
 
-import spiglet.symboltable.Context;
-
 public class Method {
 	public String methodName;
 	public int paramNum, stackNum = 0, callParamNum = 0;
