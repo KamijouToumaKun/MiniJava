@@ -1,60 +1,53 @@
-import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.PrintStream;
 import java.util.Scanner;
 
-import spiglet.ParseException;
-import spiglet.SpigletParser;
-import spiglet.TokenMgrError;
-import spiglet.syntaxtree.*;
-import spiglet.symboltable.Context;
-import spiglet.symboltable.Method;
-import spiglet.symboltable.RegAssignment;
+import kanga.ParseException;
+import kanga.KangaParser;
+import kanga.TokenMgrError;
 
-import spiglet.symboltable.FlowGraphPointer;
-
-import spiglet.visitor.CreateFlowGraphVertexVisitor;
-import spiglet.visitor.CreateFlowGraphVisitor;
-import spiglet.visitor.Spiglet2KangaVisitor;
+import kanga.syntaxtree.*;
+import kanga.symboltable.Context;
+import kanga.visitor.Kanga2MIPSVisitor;
 
 public class Main {
-    public static void main(String[] args) {
+	public static void main(String[] args) {
     	try {
-            // InputStream is = new FileInputStream("test/BinaryTree.spg");
-            // InputStream is = new FileInputStream("test/BubbleSort.spg");
-            // InputStream is = new FileInputStream("test/Factorial.spg");
-            // InputStream is = new FileInputStream("test/LinearSearch.spg");
-            // InputStream is = new FileInputStream("test/LinkedList.spg");
-            // InputStream is = new FileInputStream("test/MoreThan4.spg");
-            // InputStream is = new FileInputStream("test/QuickSort.spg");
-            InputStream is = new FileInputStream("test/TreeVisitor.spg");
+    		// InputStream is = new FileInputStream("test/BinaryTree.kg");
+            // InputStream is = new FileInputStream("test/BubbleSort.kg");
+            // InputStream is = new FileInputStream("test/Factorial.kg");
+            // InputStream is = new FileInputStream("test/LinearSearch.kg");
+            // InputStream is = new FileInputStream("test/LinkedList.kg");
+            // InputStream is = new FileInputStream("test/MoreThan4.kg");
+            // InputStream is = new FileInputStream("test/QuickSort.kg");
+            InputStream is = new FileInputStream("test/TreeVisitor.kg");
 
 			Scanner sc = new Scanner(is);
 			String code = "";
-			while (sc.hasNext()) {
+			while(sc.hasNext()) {
 				code += sc.nextLine() + "\n";
 			}
-			spg2kan(code, new PrintStream("mine.kg"));
-    	} catch (TokenMgrError e){
+			kanga2mips(code, new PrintStream("mine.s"));
+		}
+    	catch(TokenMgrError e){
     		//Handle Lexical Errors
     		e.printStackTrace();
-    	} catch (Exception e){
+    	}
+    	catch(Exception e){
     		e.printStackTrace();
     	}
     }
-    public static void spg2kan(String s, PrintStream out) {
-        InputStream in = new ByteArrayInputStream(s.getBytes());
-        try {
+    public static void kanga2mips(String s, PrintStream out) {
+    	InputStream in = new ByteArrayInputStream(s.getBytes());
+		try {
             new Context(out); // global context & ofstream
 
-            Node root = new SpigletParser(in).Goal();
-            root.accept(new CreateFlowGraphVertexVisitor(), FlowGraphPointer.getInstance());
-            root.accept(new CreateFlowGraphVisitor(), FlowGraphPointer.getInstance());
-            new RegAssignment().LinearScan();
-            root.accept(new Spiglet2KangaVisitor(), null);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+			Node root = new KangaParser(in).Goal();
+			root.accept(new Kanga2MIPSVisitor(), null);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 }
