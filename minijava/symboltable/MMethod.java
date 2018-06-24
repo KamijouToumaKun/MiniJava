@@ -74,7 +74,10 @@ public class MMethod extends MType {
     }
 
     public boolean addVar(MVar nVar) {
-        if (!mVarSet.add(nVar)) {
+        if (repeatedParam(nVar.getName())) {
+            ErrorPrinter.instance.printError(nVar.getLine(),nVar.getColumn(),"Var " + nVar.getName() + " declaration conflict with param");
+            return false;
+        } else if (!mVarSet.add(nVar)) {
             ErrorPrinter.instance.printError(nVar.getLine(),nVar.getColumn(),"Var " + nVar.getName() + " repeated declared");
             return false;
         } else {
