@@ -255,7 +255,7 @@ public class Spiglet2KangaVisitor extends GJDepthFirst<String, Method> {
 
 		n.f0.accept(this, argu);
 
-		final int stackNum = argu.paramNum - 4 > 0 ? argu.paramNum : 0;
+		final int stackNum = argu.paramNum > 4 ? argu.paramNum - 4 : 0;
 		// store callee-saved S
 		if (argu.regS.size() != 0) {
 			for (int idx = stackNum; idx < stackNum + argu.regS.size(); idx++) {
