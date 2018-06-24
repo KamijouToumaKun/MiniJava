@@ -406,30 +406,37 @@ public class MinijavaToPigletVisitor extends GJDepthFirst<MPiglet,Object>{
         // _ret.appendCode(n.f0.accept(this, argu));
         // if not:
         _ret.appendCode(n.f0.accept(this, argu), false);
-        _ret.appendString(" MOVE " + s2 + " PLUS 4 TIMES 4");
-        // don't need to getmVar() here.
-        /*
-        e.g.
-        MOVE (TEMP 50) (BEGIN
-        HLOAD TEMP 52 TEMP 0 4
-        RETURN TEMP 52
-        END) MOVE TEMP 51 PLUS 4 TIMES 4
+        /* e.g.
+        MOVE TEMP 54(s1) BEGIN
+        HLOAD TEMP 56 TEMP 0 4
+        RETURN TEMP 56
+        END(Identifier): s1 = Identifier
         */
-
+        _ret.appendString("\nMOVE " + s2 + " PLUS 4 TIMES 4");
         n.f1.accept(this, null);
 
-        _ret.appendCode(n.f2.accept(this, argu)); //it's an index num
-        //TODO: Attention, this line is too long so I cut it into halves.
-
+        _ret.appendCode(n.f2.accept(this, argu), false); // it's an index num
+        // e.g. MOVE TEMP 55(s2) PLUS 4 TIMES 4 TEMP 25(Expression1): s2 = offset
         n.f3.accept(this, null);
         n.f4.accept(this, null);
 
-        _ret.appendString(" MOVE " + s1 + " PLUS " + s1 + " " + s2);
-        _ret.appendString(" HSTORE " + s1 + " 0");
+        _ret.appendString("\nMOVE " + s1 + " PLUS " + s1 + " " + s2);
+        // e.g. MOVE TEMP 54 PLUS TEMP 54 TEMP 55: s1 += s2
+        _ret.appendString("\nHSTORE " + s1 + " 0");
+        // e.g. HSTORE TEMP 54 0 
+
         //If new line:
         // _ret.appendCode(n.f5.accept(this, argu));
         //If not:
         _ret.appendCode(n.f5.accept(this, argu), false);
+        /* Expression2:
+        BEGIN
+        MOVE TEMP 57
+        BEGIN
+        HLOAD TEMP 60 TEMP 0 4
+        RETURN TEMP 60
+        END
+        */
         n.f6.accept(this, null);
 
         return _ret;
@@ -451,6 +458,15 @@ public class MinijavaToPigletVisitor extends GJDepthFirst<MPiglet,Object>{
      * f6 -> Statement()
      */
     public MPiglet visit(IfStatement n, Object argu) {
+        /* e.g.
+        CJUMP MINUS 1
+        
+        LT TEMP 27 TEMP 23 L8
+        MOVE TEMP 28 0
+        JUMP L9
+        L8 MOVE TEMP 28 1
+        L9 NOOP
+        */
         MPiglet _ret = new MPiglet("CJUMP");
         n.f0.accept(this, null);
         n.f1.accept(this, null);
@@ -467,7 +483,7 @@ public class MinijavaToPigletVisitor extends GJDepthFirst<MPiglet,Object>{
         n.f3.accept(this, null);
 
         _ret.appendCode(n.f4.accept(this, argu));
-        _ret.appendCode(new MPiglet( "JUMP " + s2 + "\n" + s1));
+        _ret.appendCode(new MPiglet("JUMP " + s2 + "\n" + s1));
 
         n.f5.accept(this, null);
 
@@ -488,6 +504,12 @@ public class MinijavaToPigletVisitor extends GJDepthFirst<MPiglet,Object>{
      * f4 -> Statement()
      */
     public MPiglet visit(WhileStatement n, Object argu) {
+        /* e.g.
+        L16 CJUMP LT TEMP 20 
+        ...
+        JUMP L16
+        L17 NOOP
+        */
         MPiglet _ret = null;
         String s1 = getNextLabel(), s2 = getNextLabel();
         _ret = new MPiglet(s1);
@@ -799,7 +821,7 @@ public class MinijavaToPigletVisitor extends GJDepthFirst<MPiglet,Object>{
     /**
      * f0 -> <IDENTIFIER>
      */
-    //TODO: sometimes, unnecessary new line.
+    // TODO: sometimes, unnecessary new line.
     public MPiglet visit(Identifier n, Object argu) {
         MPiglet _ret = new MPiglet("");
         MVar mVar = null;
@@ -895,7 +917,7 @@ public class MinijavaToPigletVisitor extends GJDepthFirst<MPiglet,Object>{
         _ret.setmClass(mClass);
         // Since every instance of a class share the same method table,
         // mClass.getMethodTempName() can be reused.
-        // don't need to getNextTempName() evert time.
+        // don't need to do getNextTempName() every time.
         if (mClass.getMethodTempName() == null) {
             mClass.setMethodTempName(getNextTempName());
         }
