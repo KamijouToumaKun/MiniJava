@@ -34,7 +34,7 @@ public class MClass extends MType {
     public boolean repeatedMethod(String methodName,String returnType,ArrayList<MVar> paramList) {
         MClass nClass = this;
         MMethod nMethod = this.getMethod(methodName);
-        //there will be no circle extension here
+        // there will be no circle extension here
         while (true) {
             for (MMethod knownMethod:nClass.getMethodSet()) {
                 if (methodName.equals(knownMethod.getName())) {
@@ -45,8 +45,11 @@ public class MClass extends MType {
                     }
                 }
             }
-            if(nClass.getParentClass() != null) {
+            if (nClass.getParentClass() != null) {
                 nClass = MClassList.instance.findClass(nClass.getParentClass());
+                if (nClass == null) {
+                    break;
+                }
             }
             else {
                 break;
@@ -73,10 +76,10 @@ public class MClass extends MType {
         }
     }
 
-    //get a method object according to its name and paramList
+    // get a method object according to its name and paramList
     public MMethod getMethod(String name) {
         MClass nClass = this;
-        //there will be no circle extension here
+        // assume that there will be no circle extension here
         while (true) {
             for (MMethod knownMethod:nClass.getMethodSet()) {
                 if (name.equals(knownMethod.getName())) {
@@ -95,7 +98,7 @@ public class MClass extends MType {
 
     public MVar getVar(String name) {
         MClass nClass = this;
-        //there will be no circle extension here
+        // assume that there will be no circle extension here
         while (true) {
             for (MVar knownVar:nClass.getVarSet()) {
                 if (name.equals(knownVar.getName())) return knownVar;
